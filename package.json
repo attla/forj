@@ -1,0 +1,56 @@
+{
+  "name": "forj",
+  "description": "SQLite ORM and Query Builder whitout dependencies",
+  "version": "0.0.0",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "bench": "tsx tests/benchmark/*.bench.ts",
+    "build": "tsup src/index.ts --dts --format esm",
+    "prepublishOnly": "bun run build"
+  },
+  "devDependencies": {
+    "bun-types": "^1.2.13",
+    "tsup": "^8.5.0",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "files": ["dist"],
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org"
+  },
+  "author": "Zunq <open-source@zunq.com>",
+  "license": "MIT",
+  "homepage": "https://zunq.dev",
+  "repository": "git://github.com/attla/forj",
+  "bugs": "https://github.com/attla/forj/issues",
+  "keywords": [
+    "forj",
+    "attla",
+    "resources",
+    "support",
+    "sqlite",
+    "sql",
+    "orm",
+    "query-builder",
+    "query",
+    "db",
+    "database",
+    "aws",
+    "lambda",
+    "llrt",
+    "deno",
+    "bun",
+    "nodejs"
+  ]
+}
