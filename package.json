@@ -1,13 +1,14 @@
 {
   "name": "forj",
   "description": "SQLite ORM and Query Builder whitout dependencies",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "type": "module",
   "main": "src/index.ts",
   "files": ["src"],
   "exports": {
     ".": "./src/index.ts",
-    "./d1": "./src/d1/index.ts"
+    "./d1": "./src/d1/index.ts",
+    "./d1/types": "./src/d1/types.ts"
   },
   "-exports": {
     ".": {
@@ -25,12 +26,15 @@
     "-prepublishOnly": "bun run build"
   },
   "dependencies": {
-    "@cloudflare/workers-types": "^4.20260113.0",
+    "@aws-sdk/client-dynamodb": "3.817.0",
+    "@aws-sdk/lib-dynamodb": "3.817.0",
     "pluralize": "^8.0",
+    "t0n": "^0.1",
     "zod": "^3.19.1"
   },
   "devDependencies": {
     "@types/pluralize": "^0.0.33",
+    "@cloudflare/workers-types": "^4.20260113.0",
     "bun-types": "^1.2.13",
     "terser": "^5.46.0",
     "tiny-glob": "^0.2",

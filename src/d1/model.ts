@@ -1,10 +1,11 @@
 import type {
   D1Database,
-  D1PreparedStatement,
-  D1Result, D1ExecResult, D1Meta,
-} from '@cloudflare/workers-types'
+  // D1PreparedStatement,
+  // D1Result, D1ExecResult, D1Meta,
+} from './types'
 
 import z from 'zod'
+import { Envir } from 't0n'
 
 import QueryBuilder from '../query-builder'
 import BModel from '../model'
@@ -38,11 +39,11 @@ export abstract class BaseModel<TB extends keyof DB, DB> extends BModel<TB, DB> 
 
   static DB() {
     if (typeof this.$db == 'string') { // TODO: improv compatibility without nodejs_compat
-      if (!(this.$db in process.env))
+      if (!Envir.has(this.$db))
         throw new Error(`Database '${this.$db}' instance not provided.`)
 
       // @ts-ignore
-      return process.env[this.$db] as D1Database
+      return Envir.get(this.$db) as D1Database
     }
 
     return this.$db

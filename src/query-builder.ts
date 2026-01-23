@@ -42,23 +42,19 @@ export default class QueryBuilder<
   #joins: string[] = []
 
   #pipe?: Pipe<S, T, C>
-  // #runFn?: RunFn<S, T, C>
 
   constructor(
     table: string,
     schema?: DBSchema,
     pipe?: Pipe<S, T, C>
-    // runFn?: RunFn<S, T, C>
   ) {
     this.#table = table
     this.#schema = schema
     this.#pipe = pipe
-    // this.#runFn = runFn
     this.#clauses = new ClauseBuilder<T>(table, schema)
   }
 
   async run() {
-    // if (!this.#runFn)
     if (!this.#pipe?.run)
       throw new Error(`No database connection.`)
 

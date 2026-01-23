@@ -26,8 +26,8 @@ const Schema = object({
 
 class Role extends Model(Schema, 'users') {
 }
-const rolesOne = Role.select('name').on('id', 123).join('roles', 'id', '123').first()
-const rolesAll = Role.select('name').on('id', 123).join('roles', 'id', '123').all()
+// const rolesOne = Role.select('name').on('id', 123).join('roles', 'id', '123').first()
+// const rolesAll = Role.select('name').on('id', 123).join('roles', 'id', '123').all()
 
 
 
