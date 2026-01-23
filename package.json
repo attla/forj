@@ -1,31 +1,46 @@
 {
   "name": "forj",
   "description": "SQLite ORM and Query Builder whitout dependencies",
-  "version": "0.0.0",
+  "version": "0.0.2",
   "type": "module",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "src/index.ts",
+  "files": ["src"],
   "exports": {
+    ".": "./src/index.ts",
+    "./d1": "./src/d1/index.ts"
+  },
+  "-exports": {
     ".": {
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
+    },
+    "./d1": {
+      "import": "./dist/d1.js",
+      "types": "./dist/d1.d.ts"
     }
   },
   "scripts": {
     "bench": "tsx tests/benchmark/*.bench.ts",
-    "build": "tsup src/index.ts --dts --format esm",
-    "prepublishOnly": "bun run build"
+    "build": "tsup",
+    "-prepublishOnly": "bun run build"
+  },
+  "dependencies": {
+    "@cloudflare/workers-types": "^4.20260113.0",
+    "pluralize": "^8.0",
+    "zod": "^3.19.1"
   },
   "devDependencies": {
+    "@types/pluralize": "^0.0.33",
     "bun-types": "^1.2.13",
-    "tsup": "^8.5.0",
+    "terser": "^5.46.0",
+    "tiny-glob": "^0.2",
+    "tsup": "^8.5.1",
     "tsx": "^4.19.4",
     "typescript": "^5.8.3"
   },
   "engines": {
     "node": ">=18.0.0"
   },
-  "files": ["dist"],
   "publishConfig": {
     "registry": "https://registry.npmjs.org"
   },
@@ -40,12 +55,18 @@
     "resources",
     "support",
     "sqlite",
-    "sql",
     "orm",
-    "query-builder",
     "query",
+    "builder",
+    "query builder",
+    "query-builder",
     "db",
     "database",
+    "sql",
+    "mysql",
+    "postgres",
+    "postgresql",
+    "typescript",
     "aws",
     "lambda",
     "llrt",

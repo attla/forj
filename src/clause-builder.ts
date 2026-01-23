@@ -1,15 +1,20 @@
-import {
+import { parseColumn, isJoinCompare, zSame, zType } from './utils'
+import type {
   IClauseBuilder,
   ClauseOperator,
-  Values,
-  WhereFn,
-  WhereArgs,
+  Value, Values,
+  WhereFn, WhereArgs,
+  DBSchema,
 } from './types'
 
-export default class ClauseBuilder implements IClauseBuilder {
+export default class ClauseBuilder<
+  T,
+  C extends keyof T = keyof T
+> implements IClauseBuilder<T> {
   #table: string
+  #schema?: DBSchema
   #clauses: string[] = []
-  #bindings: Values = []
+  #args: Values = []
 
   get clauses() {
     return this.#clauses
@@ -18,28 +23,29 @@ export default class ClauseBuilder implements IClauseBuilder {
     this.#clauses.push(...clauses)
   }
 
-  get bindings() {
-    return this.#bindings
+  get args() {
+    return this.#args
   }
-  set bindings(bindings: Values) {
-    this.#bindings.push(...bindings)
+  set args(args: Values) {
+    this.#args.push(...args)
   }
 
   get length() {
     return this.#clauses.length
   }
 
-  constructor(table: string) {
+  constructor(table: string, schema?: DBSchema) {
     this.#table = table
+    this.#schema = schema
   }
 
-  #nested(fn: WhereFn, operator: ClauseOperator = 'AND') {
-    const nested = new ClauseBuilder(this.#table)
+  #nested(fn: WhereFn<T, C>, operator: ClauseOperator = 'AND') {
+    const nested = new ClauseBuilder<T, C>(this.#table, this.#schema)
     fn(nested)
 
     if (nested.length) {
       this.#clauses.push(`${this.length ? operator +' ' : ''}(${nested.clauses.join(' ')})`)
-      this.#bindings.push(...nested.bindings)
+      this.#args.push(...nested.args)
     }
 
     return this
@@ -50,18 +56,14 @@ export default class ClauseBuilder implements IClauseBuilder {
     this.#clauses.push(sql)
 
     if (values?.length) // TODO: https://developers.cloudflare.com/d1/worker-api/#type-conversion
-      this.#bindings.push(...values)
+      this.#args.push(...values)
 
     return this
   }
 
-  #column(name: string) {
-    return name.includes('.') ? name : this.#table +'.'+ name
-  }
-
   #where(
     logical: ClauseOperator,
-    ...args: WhereArgs
+    ...args: WhereArgs<T>
   ) {
     if (typeof args[0] == 'function')
       return this.#nested(args[0], logical)
@@ -69,29 +71,34 @@ export default class ClauseBuilder implements IClauseBuilder {
     const length = args.length
     let [column, operator, value] = args
 
-    if (length == 2) {
+    if (length == 2) { // @ts-ignore
       value = operator
       operator = '='
     }
 
-    column = this.#column(String(column))
+    // @ts-ignore
+    column = parseColumn(String(column), this.#table)
 
-    return typeof value == 'string' && value.includes('.') // TODO: check if before "." has a valid know table
-      ? this.#clause(`${column} ${operator} ${value}`, [], logical)
+    if (this.#schema && !zSame(column, value, this.#schema)) {
+      throw new Error(`Table column '${String(column)}' of type '${zType(column, this.#schema)}' is not assignable as type of '${typeof value}'.`)
+    }
+
+    return isJoinCompare(value, this.#schema) // @ts-ignore
+      ? this.#clause(`${column} ${operator} ${value}`, [], logical) // @ts-ignore
       : this.#clause(`${column} ${operator} ?`, [value], logical)
   }
 
-  where(...args: WhereArgs) {
+  where(...args: WhereArgs<T>) {
     return this.#where('AND', ...args)
   }
-  on(...args: WhereArgs) {
+  on(...args: WhereArgs<T>) {
     return this.where(...args)
   }
 
-  orWhere(...args: WhereArgs) {
+  orWhere(...args: WhereArgs<T>) {
     return this.#where('OR', ...args)
   }
-  orOn(...args: WhereArgs) {
+  orOn(...args: WhereArgs<T>) {
     return this.orWhere(...args)
   }
 
@@ -99,37 +106,76 @@ export default class ClauseBuilder implements IClauseBuilder {
     column: string,
     values: Values,
     operator: 'IN' | 'NOT IN',
-    logicalOperator: ClauseOperator = 'AND'
+    logical: ClauseOperator = 'AND'
   ) {
     if (!values?.length) return this
-    return this.#clause(this.#column(column) + ` ${operator} (${values.map(() => '?').join(', ')})`, values, logicalOperator)
+    return this.#clause(parseColumn(column, this.#table) + ` ${operator} (${values.map(() => '?').join(', ')})`, values, logical)
   }
-  whereIn(column: string, values: Values) {
+
+  whereIn(column: C, values: T[C][]) { // @ts-ignore
     return this.#in(column, values, 'IN')
   }
-  in(column: string, values: Values) {
+  in(column: C, values: T[C][]) {
     return this.whereIn(column, values)
   }
 
-  whereNotIn(column: string, values: Values) {
+  whereNotIn(column: C, values: T[C][]) { // @ts-ignore
     return this.#in(column, values, 'NOT IN')
   }
-  notIn(column: string, values: Values) {
+  notIn(column: C, values: T[C][]) {
     return this.whereNotIn(column, values)
   }
 
-  orWhereIn(column: string, values: Values) {
+  orWhereIn(column: C, values: T[C][]) { // @ts-ignore
     return this.#in(column, values, 'IN', 'OR')
   }
-  orIn(column: string, values: Values) {
+  orIn(column: C, values: T[C][]) {
     return this.orWhereIn(column, values)
   }
 
-  orWhereNotIn(column: string, values: Values) {
+  orWhereNotIn(column: C, values: T[C][]) { // @ts-ignore
     return this.#in(column, values, 'NOT IN', 'OR')
   }
-  orNotIn(column: string, values: Values) {
+  orNotIn(column: C, values: T[C][]) {
     return this.orWhereNotIn(column, values)
+  }
+
+  #between(
+    column: string,
+    one: Value,
+    two: Value,
+    operator: 'BETWEEN' | 'NOT BETWEEN',
+    logical: ClauseOperator = 'AND'
+  ) {
+    return this.#clause(parseColumn(column, this.#table) + ` ${operator} ? AND ?`, [one, two], logical)
+  }
+
+  whereBetween(column: C, one: T[C], two: T[C]) { // @ts-ignore
+    return this.#between(column, one, two, 'BETWEEN')
+  }
+  between(column: C, one: T[C], two: T[C]) {
+    return this.whereBetween(column, one, two)
+  }
+
+  orWhereBetween(column: C, one: T[C], two: T[C]) { // @ts-ignore
+    return this.#between(column, one, two, 'BETWEEN', 'OR')
+  }
+  orBetween(column: C, one: T[C], two: T[C]) {
+    return this.orWhereBetween(column, one, two)
+  }
+
+  whereNotBetween(column: C, one: T[C], two: T[C]) { // @ts-ignore
+    return this.#between(column, one, two, 'NOT BETWEEN')
+  }
+  notBetween(column: C, one: T[C], two: T[C]) {
+    return this.whereNotBetween(column, one, two)
+  }
+
+  orWhereNotBetween(column: C, one: T[C], two: T[C]) { // @ts-ignore
+    return this.#between(column, one, two, 'NOT BETWEEN', 'OR')
+  }
+  orNotBetween(column: C, one: T[C], two: T[C]) {
+    return this.orWhereNotBetween(column, one, two)
   }
 
   #null(
@@ -137,34 +183,34 @@ export default class ClauseBuilder implements IClauseBuilder {
     operator: 'IS' | 'IS NOT' = 'IS',
     logical: ClauseOperator = 'AND'
   ) {
-    return this.#clause(`${this.#column(column)} ${operator} NULL`, [], logical)
+    return this.#clause(parseColumn(column, this.#table) +` ${operator} NULL`, [], logical)
   }
 
-  whereNull(column: string) {
-    return this.#null(column)
+  whereNull(column: C) {
+    return this.#null(column as string)
   }
-  onNull(column: string) {
+  onNull(column: C) {
     return this.whereNull(column)
   }
 
-  orWhereNull(column: string) {
-    return this.#null(column, 'IS', 'OR')
+  orWhereNull(column: C) {
+    return this.#null(column as string, 'IS', 'OR')
   }
-  orOnNull(column: string) {
+  orOnNull(column: C) {
     return this.orWhereNull(column)
   }
 
-  whereNotNull(column: string) {
-    return this.#null(column, 'IS NOT')
+  whereNotNull(column: C) {
+    return this.#null(column as string, 'IS NOT')
   }
-  onNotNull(column: string) {
+  onNotNull(column: C) {
     return this.whereNotNull(column)
   }
 
-  orWhereNotNull(column: string) {
-    return this.#null(column, 'IS NOT', 'OR')
+  orWhereNotNull(column: C) {
+    return this.#null(column as string, 'IS NOT', 'OR')
   }
-  orNotNull(column: string) {
+  orNotNull(column: C) {
     return this.orWhereNotNull(column)
   }
 }

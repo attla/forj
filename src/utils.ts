@@ -1,3 +1,12 @@
+import pluralize from 'pluralize'
+import type { ZodTypeAny } from 'zod'
+import type { DBSchema } from './types'
+
+const operators = ['=', '!=', '>', '<', '>=', '<=', 'LIKE', 'IN', 'NOT IN', 'IS', 'IS NOT', 'BETWEEN']
+
+export function isOperator(o: any) {
+  return typeof o == 'string' && operators.includes(o)
+}
 
 export function parseSelectColumn(
   col: string,
@@ -7,26 +16,119 @@ export function parseSelectColumn(
   if (col.toLowerCase().includes(' as '))
     return col
 
-  if (col.includes('.')) {
-    const [table, column] = col.split('.')
-    return `${table}.${column} AS ${table}_${column}`
-  }
+  const explicit = col.includes('.')
+  if (!hasJoin && !explicit)
+    return col
 
-  return hasJoin ? `${baseTable}.${col}` : col
+  const [table, column] = explicit ? col.split('.') : [baseTable, col]
+  return `${table}.${column} AS ${pluralize(table, 1)}_${column}`
 }
 
-export function formatValue(value: unknown): string {
+export function parseColumn(name: string, table: string, hasJoin: boolean = true) {
+  return !hasJoin || name.includes('.') ? name : table +'.'+ name
+}
+
+export function formatValue(value: any): string {
   if (value == null || value == undefined)
     return 'NULL'
 
-  if (typeof value == 'number' || typeof value == 'bigint')
+  const type = typeof value
+  if (type == 'number' || type == 'bigint')
     return String(value)
 
-  if (typeof value == 'boolean')
+  if (type == 'boolean')
     return value ? '1' : '0'
 
   if (value instanceof Date)
     return `'${value.toISOString().slice(0, 19).replace('T', ' ')}'`
 
   return `'${String(value).replace(/'/g, "''")}'`
+}
+
+const zodTypeMap: Record<string, string> = {
+  'ZodString': 'string',
+  'ZodNumber': 'number',
+  'ZodBoolean': 'boolean',
+  'ZodObject': 'object',
+  'ZodArray': 'array',
+  'ZodDate': 'object',
+  'ZodNull': 'object',
+  'ZodUndefined': 'undefined',
+  'ZodSymbol': 'symbol',
+  'ZodBigInt': 'bigint',
+  'ZodFunction': 'function',
+}
+
+export const isZod = (obj: any): obj is ZodTypeAny => obj && typeof obj == 'object' && '_def' in obj
+
+export const zHas = (key: string, schema?: any) => schema != null && typeof schema == 'object' && !Array.isArray(schema) && (key in schema || 'shape' in schema && key in (schema.shape as Record<string, ZodTypeAny>))
+
+export const zGet = (key: string, schema?: any): [string, ZodTypeAny] | false => {
+  const keys = key.split('.')
+  for (const i in keys) {
+    if (typeof schema != 'object') return false
+
+    const k = keys[i]
+    if ('shape' in schema && k in schema.shape) {
+      schema = schema.shape[k]
+      continue
+    } else if (k in schema) {
+      schema = schema[k]
+      continue
+    }
+
+    return false
+  }
+
+  return [keys[keys.length - 1], schema]
+}
+
+export const zType = (key: string, schema?: any): string => {
+  const _ = zGet(key, schema)
+  if (!_ || !('_def' in _[1]))
+    return 'unknown'
+  key = _[0]
+  schema = _[1]
+
+  return ((schema?._def?.innerType?._def || schema?._def)?.typeName || '').split('Zod').pop().toLowerCase()
+}
+
+export const zSame = (key: string, val: any, schema?: any, deep: boolean = false): boolean => {
+  if (!deep) {
+    const _ = zGet(key, schema)
+    if (!_) return _
+    key = _[0]
+    schema = _[1]
+  }
+
+  if (!('_def' in schema))
+    return false // typeof val == typeof schema[key] // TODO: improv it
+
+  let def = schema?._def || {}
+  if (schema?._def?.typeName == 'ZodOptional')
+    def = def?.innerType?._def || {}
+
+  const zType = def?.typeName || ''
+
+  if (!zType) return false
+
+  if (zType == 'ZodUnion' && def?.options?.length)
+    return def?.options?.some((z: any) => zSame(key, val, z, true))
+
+  else if (zType == 'ZodArray')
+    return Array.isArray(val)
+
+  else if (zType == 'ZodDate')
+    return val instanceof Date
+
+  return typeof val == zodTypeMap[zType]
+}
+
+export function isJoinCompare(val: any, schema?: DBSchema) {
+  // if (!schema) return typeof val == 'string' && val?.includes('.')
+  if (!schema || typeof val != 'string' || !val?.includes('.'))
+    return false
+
+  const keys = zGet(val, schema)
+  return keys && keys?.length
 }
