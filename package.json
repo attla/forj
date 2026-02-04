@@ -1,14 +1,17 @@
 {
   "name": "forj",
   "description": "SQLite ORM and Query Builder whitout dependencies",
-  "version": "0.0.3",
+  "version": "0.0.5",
   "type": "module",
   "main": "src/index.ts",
   "files": ["src"],
   "exports": {
     ".": "./src/index.ts",
     "./d1": "./src/d1/index.ts",
-    "./d1/types": "./src/d1/types.ts"
+    "./d1/types": "./src/d1/types.ts",
+    "./dynamodb": "./src/dynamodb/index.ts",
+    "./dynamodb/types": "./src/dynamodb/types.ts",
+    "./migrate": "./src/migrations/index.ts"
   },
   "-exports": {
     ".": {
@@ -59,6 +62,8 @@
     "resources",
     "support",
     "sqlite",
+    "migration",
+    "schema",
     "orm",
     "query",
     "builder",
@@ -71,9 +76,15 @@
     "postgres",
     "postgresql",
     "typescript",
+    "serverless",
+    "dynamo",
+    "dynamodb",
     "aws",
     "lambda",
     "llrt",
+    "d1",
+    "cloudflare",
+    "workers",
     "deno",
     "bun",
     "nodejs"
