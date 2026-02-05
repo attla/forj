@@ -1,5 +1,5 @@
 import { Blueprint } from './blueprint'
-import { Migration } from './migration'
+// import { Migration } from './migration'
 
 export type BlueprintFn = (table: Blueprint) => void
 
@@ -34,12 +34,17 @@ export interface ForeignKeyDefinition {
   onUpdate?: 'cascade' | 'set null' | 'restrict' | 'no action',
 }
 
+export type QueueType = 'pending' | 'migrated'
+export type Queue = Record<QueueType, MigrationInfo[]>
+
 export interface MigrationInfo {
   timestamp: number,
   name: string,
-  fileName: string,
   className: string,
   handler: MigrationClass,
+  input: string,
+  output: string,
+  migrated: boolean,
 }
 
 export interface MigrationRecord {

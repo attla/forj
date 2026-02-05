@@ -3,44 +3,45 @@ import { mkdirSync, existsSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { Datte, IMPORT } from 't0n'
 import { Schema } from './schema'
-import { MigrationInfo, MigrationClass } from './types'
+import { MigrationInfo, MigrationClass, Queue } from './types'
 
 const __root = resolve(dirname(new URL(import.meta.url).pathname), '../../../..')
 
 export class Migrator {
-  static #dir: string = ''
-  static #folder: string = 'migrations'
-  static #sqlFolder: string = 'sql'
+  static #input: string = join(__root, 'migrations')
+  static #output: string = join(__root, 'migrations', 'sql')
 
-  static dir(dir: string) {
-    this.#dir = dir
+  static inputDir(dir: string) {
+    this.#input = join(__root, dir)
+    return this
+  }
+  static outputDir(dir: string) {
+    this.#output = join(__root, dir)
     return this
   }
 
-  static folder(dir: string) {
-    this.#dir = dir
-    return this
-  }
-
-  static async toSql(outputDir: string = '') {
-    const dir = this.#dir || join(__root, this.#folder)
-    outputDir ||= join(dir, this.#sqlFolder)
-
-    this.#ensureDir(dir)
-    this.#ensureDir(outputDir)
-    const files = (await glob(join(dir, '/*.{ts,js}'))).filter(file => !file.includes('.d.')) // TODO: sort
+  static async queue() {
+    this.#ensureDir(this.#input)
+    const files = await glob(join(this.#input, '/*.{ts,js}'))
+    const list: Queue = {'pending': [], 'migrated': []}
 
     for (const file of files) {
+      if (file.includes('.d.')) continue
       const info = await this.#info(file)
-      if (!info)
-        continue // TODO: trigger a warn
+      if (!info) continue // TODO: trigger a warn
 
-      const sql = await this.run(info.handler)
-      const path = join(outputDir, info.name +'.sql')
-      if (!existsSync(path))
-        writeFileSync(path, `-- Migration: ${info.name}\n\n${sql}\n`)
+      list[info.migrated ? 'migrated' : 'pending'].push(info)
     }
 
+    return list
+  }
+
+  static async compile(migrations: MigrationInfo[]) {
+    for (const migration of migrations) {
+      const sql = await this.run(migration.handler)
+      if (!existsSync(migration.output))
+        writeFileSync(migration.output, `-- Migration: ${migration.name}\n\n${sql}\n`)
+    }
   }
 
   static async run(handler: MigrationClass) {
@@ -62,13 +63,16 @@ export class Migrator {
   }
 
   static async #info(fileName: string): Promise<MigrationInfo | null> {
-    const name = fileName.replace(/\.[jt]s$/, '')
+    let name = fileName.replace(/\.[jt]s$/, '')
     const match = name.match(/\/(\d{4})_(\d{2})_(\d{2})_(\d{2})(\d{2})(\d{2})_(.+)$/)
+    name = name.split('/').at(-1) as string
 
     if (!match) return null
     const [, year, month, day, hour, minute, second, slugName] = match
 
-    const mod = await IMPORT(join(__root, fileName))
+    const input = join(__root, fileName)
+    const output = join(this.#output, name +'.sql')
+    const mod = await IMPORT(input)
     const handler = mod.default as MigrationClass
 
     return {
@@ -80,28 +84,36 @@ export class Migrator {
         parseInt(minute),
         parseInt(second)
       ).getTime(),
-      name: name.split('/').at(-1) as string,
-      fileName,
-      className: this.#toClassName(slugName),
+      name,
+      className: this.className(slugName),
       handler,
+      input,
+      output,
+      migrated: existsSync(output)
     }
   }
 
-  static #toClassName(name: string) {
-    return name
+  static className(name: string) {
+    const lastSlashIndex = name.lastIndexOf('/')
+    const fileName = lastSlashIndex >= 0 ? name.substring(lastSlashIndex + 1) : name
+
+    const dotIndex = fileName.lastIndexOf('.')
+    const baseName = dotIndex > 0 ? fileName.substring(0, dotIndex) : fileName
+
+    return baseName
       .split(/[-_.]/)
       .map(s => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase())
       .join('')
+      + Datte.dateTime().replace(/[:.\-\s_]/g, '')
   }
 
   static fileName(name: string) {
     return (
-      name.replace(/([A-Z])/g, '_$1') // snake_case
+      Datte.dateTime().replace(/[.-\s]/g, '_').replace(/\:/g, '')
+      +'_'+ name.replace(/([A-Z])/g, '_$1') // snake_case
           .replace(/\s+/g, '_')
           .toLowerCase()
-      + '_'
-      + Datte.dateTime().replace(/[:.-]/g, '_').replace(/_+/g, '_')
-    ).replace(/^_+|_+$/g, '')
+    ).replace(/_+/g, '_')
   }
 
   static #ensureDir(dir: string) {
