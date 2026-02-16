@@ -53,17 +53,17 @@ export default class SchemaBuilder {
     if (column.length && !column.type.includes('('))
       sql += `(${column.length})`
 
-    if (column.unsigned)
-      sql += ' UNSIGNED'
+    if (column.autoIncrement)
+      sql += ' AUTOINCREMENT'
+
+    // if (column.unsigned)
+    //   sql += ' UNSIGNED'
 
     if (column.nullable) {
       sql += ' NULL'
     } else {
       sql += ' NOT NULL'
     }
-
-    if (column.autoIncrement)
-      sql += ' AUTO_INCREMENT'
 
     if (column.default !== undefined) {
       if (column.default === null) {
@@ -83,8 +83,8 @@ export default class SchemaBuilder {
     if (column.primary)
       sql += ' PRIMARY KEY'
 
-    if (column.comment)
-      sql += ` COMMENT '${column.comment.replace(/'/g, "''")}'`
+    // if (column.comment)
+    //   sql += ` COMMENT '${column.comment.replace(/'/g, "''")}'`
 
     return sql
   }

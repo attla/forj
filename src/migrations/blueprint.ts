@@ -23,7 +23,7 @@ export class Blueprint {
   }
 
   id(name: string = 'id') { // Auto-increment ID (bigint unsigned)
-    return this.#column({ name, type: 'BIGINT', unsigned: true, autoIncrement: true, primary: true, nullable: false })
+    return this.#column({ name, type: 'INTEGER', autoIncrement: true, primary: true, nullable: false })
   }
 
   string(name: string, length: number = 255) {
@@ -34,49 +34,58 @@ export class Blueprint {
     return this.#column({ name, type: 'TEXT', nullable: false })
   }
 
+  int(name: string) {
+    return this.#column({ name, type: 'INTEGER', nullable: false })
+  }
   integer(name: string) {
+    return this.int(name)
+  }
+  real(name: string) {
+    return this.#column({ name, type: 'REAL', nullable: false })
+  }
+  numeric(name: string) {
+    return this.#column({ name, type: 'NUMERIC', nullable: false })
+  }
+
+  // bigInteger(name: string) {
+  //   return this.#column({ name, type: 'BIGINT', nullable: false })
+  // }
+
+  // tinyInteger(name: string) {
+  //   return this.#column({ name, type: 'TINYINT', nullable: false })
+  // }
+
+  boolean(name: string) {
     return this.#column({ name, type: 'INTEGER', nullable: false })
   }
 
-  bigInteger(name: string) {
-    return this.#column({ name, type: 'BIGINT', nullable: false })
-  }
+  // decimal(name: string, precision: number = 8, scale: number = 2) {
+  //   return this.#column({ name, type: `DECIMAL(${precision},${scale})`, nullable: false })
+  // }
 
-  tinyInteger(name: string) {
-    return this.#column({ name, type: 'TINYINT', nullable: false })
-  }
+  // float(name: string) {
+  //   return this.#column({ name, type: 'FLOAT', nullable: false })
+  // }
 
-  boolean(name: string) {
-    return this.#column({ name, type: 'BOOLEAN', nullable: false })
-  }
+  // double(name: string) {
+  //   return this.#column({ name, type: 'DOUBLE', nullable: false })
+  // }
 
-  decimal(name: string, precision: number = 8, scale: number = 2) {
-    return this.#column({ name, type: `DECIMAL(${precision},${scale})`, nullable: false })
-  }
+  // date(name: string) {
+  //   return this.#column({ name, type: 'DATE', nullable: false })
+  // }
 
-  float(name: string) {
-    return this.#column({ name, type: 'FLOAT', nullable: false })
-  }
+  // dateTime(name: string) {
+  //   return this.#column({ name, type: 'DATETIME', nullable: false })
+  // }
 
-  double(name: string) {
-    return this.#column({ name, type: 'DOUBLE', nullable: false })
-  }
+  // timestamp(name: string) {
+  //   return this.#column({ name, type: 'TIMESTAMP', nullable: false })
+  // }
 
-  date(name: string) {
-    return this.#column({ name, type: 'DATE', nullable: false })
-  }
-
-  dateTime(name: string) {
-    return this.#column({ name, type: 'DATETIME', nullable: false })
-  }
-
-  timestamp(name: string) {
-    return this.#column({ name, type: 'TIMESTAMP', nullable: false })
-  }
-
-  time(name: string) {
-    return this.#column({ name, type: 'TIME', nullable: false })
-  }
+  // time(name: string) {
+  //   return this.#column({ name, type: 'TIME', nullable: false })
+  // }
 
   json(name: string) {
     return this.#column({ name, type: 'JSON', nullable: false })
@@ -86,14 +95,18 @@ export class Blueprint {
     return this.#column({ name, type: `ENUM(${values.map(v => `'${v}'`).join(', ')})`, nullable: false })
   }
 
+  blob(name: string) {
+    return this.#column({ name, type: 'BLOB', nullable: false })
+  }
+
   timestamps() {
-    this.timestamp('created_at')
-    this.timestamp('updated_at')
+    this.#column({ name: 'created_at', type: 'TEXT', nullable: false })
+    this.#column({ name: 'updated_at', type: 'TEXT', nullable: false })
     return this
   }
 
   softDelete(name: string = 'deleted_at') {
-    this.timestamp(name).nullable()
+    this.#column({ name, type: 'TEXT', nullable: true })
     return this
   }
 

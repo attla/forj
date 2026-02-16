@@ -15,7 +15,7 @@ export default abstract class Model<TB extends keyof DB, DB> {
   static $schema?: DBSchema
 
   static pipe<S, T>(): Pipe<S, T> {
-    throw new Error(`Database connection not provided.`) // improv this message
+    throw new Error(`Database connection not provided.`) // TODO: improv this message
   }
 
   static builder<S, T>() {
