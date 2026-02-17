@@ -8,8 +8,16 @@ import { MigrationInfo, MigrationClass, Queue } from './types'
 const __root = resolve(dirname(new URL(import.meta.url).pathname), '../../../..')
 
 export class Migrator {
-  static #input: string = join(__root, 'migrations')
-  static #output: string = join(__root, 'migrations', 'sql')
+  static #input = join(__root, 'migrations')
+  static #output = join(__root, 'migrations', 'sql')
+  static #createPatterns = [
+    /^create_(\w+)_table$/,
+    /^create_(\w+)$/,
+  ]
+  static #changePatterns = [
+    /.+_(to|from|in)_(\w+)_table$/,
+    /.+_(to|from|in)_(\w+)$/,
+  ]
 
   static inputDir(dir: string) {
     this.#input = join(__root, dir)
@@ -91,6 +99,20 @@ export class Migrator {
       output,
       migrated: existsSync(output)
     }
+  }
+
+  static guess(name: string): [string, boolean] {
+    for (const pattern of this.#createPatterns) {
+      const match = name.match(pattern)
+      if (match) return [match[1], true]
+    }
+
+    for (const pattern of this.#changePatterns) {
+      const match = name.match(pattern)
+      if (match) return [match[2], false]
+    }
+
+    return ['', false]
   }
 
   static className(name: string) {
