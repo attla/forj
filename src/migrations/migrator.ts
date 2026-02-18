@@ -31,7 +31,7 @@ export class Migrator {
   static async queue() {
     this.#ensureDir(this.#input)
     const files = await glob(join(this.#input, '/*.{ts,js}'))
-    const list: Queue = {'pending': [], 'migrated': []}
+    const list: Queue = {pending: [], migrated: []}
 
     for (const file of files) {
       if (file.includes('.d.')) continue

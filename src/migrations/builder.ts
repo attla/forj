@@ -53,6 +53,9 @@ export default class SchemaBuilder {
     if (column.length && !column.type.includes('('))
       sql += `(${column.length})`
 
+    if (column.primary)
+      sql += ' PRIMARY KEY'
+
     if (column.autoIncrement)
       sql += ' AUTOINCREMENT'
 
@@ -79,9 +82,6 @@ export default class SchemaBuilder {
 
     if (column.unique)
       sql += ' UNIQUE'
-
-    if (column.primary)
-      sql += ' PRIMARY KEY'
 
     // if (column.comment)
     //   sql += ` COMMENT '${column.comment.replace(/'/g, "''")}'`
