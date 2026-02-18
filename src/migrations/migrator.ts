@@ -40,6 +40,7 @@ export class Migrator {
 
   static async queue() {
     this.#ensureDir(this.#input)
+    this.#ensureDir(this.#output)
     const files = await glob(join(this.#input, '/*.{ts,js}'))
     const list: Queue = {pending: [], migrated: []}
 
@@ -57,8 +58,7 @@ export class Migrator {
   static async compile(migrations: MigrationInfo[]) {
     for (const migration of migrations) {
       const sql = await this.run(migration.handler)
-      if (!existsSync(migration.output))
-        writeFileSync(migration.output, `-- Migration: ${migration.name}\n\n${sql}\n`)
+      writeFileSync(migration.output, `-- Migration: ${migration.name}\n\n${sql}\n`)
     }
   }
 
@@ -149,6 +149,6 @@ export class Migrator {
   }
 
   static #ensureDir(dir: string) {
-    if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
+    if (!existsSync(dir)) mkdirSync(dir, {recursive: true})
   }
 }
