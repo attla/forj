@@ -71,9 +71,9 @@ export default class SchemaBuilder {
     if (column.default !== undefined) {
       if (column.default === null) {
         sql += ' DEFAULT NULL'
-      } else if (typeof column.default === 'string') {
+      } else if (typeof column.default == 'string') {
         sql += ` DEFAULT '${column.default}'`
-      } else if (typeof column.default === 'boolean') {
+      } else if (typeof column.default == 'boolean') {
         sql += ` DEFAULT ${column.default ? 1 : 0}`
       } else {
         sql += ` DEFAULT ${column.default}`

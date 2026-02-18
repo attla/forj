@@ -8,8 +8,8 @@ import { MigrationInfo, MigrationClass, Queue } from './types'
 const __root = resolve(dirname(new URL(import.meta.url).pathname), '../../../..')
 
 export class Migrator {
-  static #input = join(__root, 'migrations')
-  static #output = join(__root, 'migrations', 'sql')
+  static #input: string
+  static #output: string
   static #createPatterns = [
     /^create_(\w+)_table$/,
     /^create_(\w+)$/,
@@ -18,6 +18,16 @@ export class Migrator {
     /.+_(to|from|in)_(\w+)_table$/,
     /.+_(to|from|in)_(\w+)$/,
   ]
+
+  static {
+    this.dir()
+  }
+
+  static dir(dir?: string) {
+    this.#input = join(__root, 'migrations', dir || '')
+    this.#output = join(this.#input, 'sql')
+    return this
+  }
 
   static inputDir(dir: string) {
     this.#input = join(__root, dir)
