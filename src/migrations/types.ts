@@ -18,6 +18,7 @@ export interface ColumnDefinition {
   unsigned?: boolean,
   index?: boolean,
   comment?: string,
+  raw?: string,
 }
 
 export interface IndexDefinition {

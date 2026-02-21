@@ -13,8 +13,18 @@ export default class Column {
     return this
   }
 
-  default(value: any) {
-    this.column.default = value
+  default(val: any) {
+    this.column.default = val
+    return this
+  }
+
+  defaultRaw(val: string) {
+    this.column.raw = 'DEFAULT '+ val
+    return this
+  }
+
+  raw(raw: string) {
+    this.column.raw = raw
     return this
   }
 

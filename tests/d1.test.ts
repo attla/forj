@@ -24,7 +24,7 @@ const Schema = object({
   roles: role,
 })
 
-class Role extends Model(Schema, 'users') {
+class Role extends Model(Schema, 'roles') {
 }
 // const rolesOne = Role.select('name').on('id', 123).join('roles', 'id', '123').first()
 // const rolesAll = Role.select('name').on('id', 123).join('roles', 'id', '123').all()
@@ -74,7 +74,7 @@ class Role extends Model(Schema, 'users') {
 // const roles = User.where('id', 1).join('roles', 'user_id', 132).select('id', 'name').first()
 
 // // const roles2 = User.where('id', 1).join('roles', 'user_id', 'users', 'id').select('id').first()
-// // const roles3 = User.where('id', 1).join('roles', 'user_id', 'users', 'id').select('id').all()
+// const roles3 = Role.where('id', 123).join('roles', 'user_id', 'users', 'id').select('id').all()
 
 // // const user = User.where('id', 1).select('id', 'name').first()
 // // console.log(User.where('id', 1))

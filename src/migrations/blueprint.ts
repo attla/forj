@@ -1,5 +1,6 @@
 import Column from './column'
 import ForeignKey from './foreign-key'
+import { tableName } from '../utils'
 import type {
   ColumnDefinition, IndexDefinition, ForeignKeyDefinition,
 } from './types'
@@ -13,7 +14,7 @@ export class Blueprint {
   #renameColumns: Map<string, string> = new Map()
 
   constructor(table: string) {
-    this.#table = table
+    this.#table = tableName(table)
   }
 
   #column(definition: ColumnDefinition) {
@@ -22,96 +23,108 @@ export class Blueprint {
     return new Column(column)
   }
 
-  id(name: string = 'id') { // Auto-increment ID (bigint unsigned)
-    return this.#column({ name, type: 'INTEGER', autoIncrement: true, primary: true, nullable: false })
+  id(name: string = 'id') {
+    return this.#column({ name, type: 'INTEGER', primary: true, nullable: true })
   }
 
-  string(name: string, length: number = 255) {
-    return this.#column({ name, type: 'VARCHAR', length, nullable: false })
+  string(name: string, length: number = 0) {
+    return this.#column({ name, type: 'VARCHAR', length })
   }
 
   text(name: string) {
-    return this.#column({ name, type: 'TEXT', nullable: false })
+    return this.#column({ name, type: 'TEXT' })
   }
 
   int(name: string) {
-    return this.#column({ name, type: 'INTEGER', nullable: false })
+    return this.#column({ name, type: 'INTEGER' })
   }
   integer(name: string) {
     return this.int(name)
   }
   real(name: string) {
-    return this.#column({ name, type: 'REAL', nullable: false })
+    return this.#column({ name, type: 'REAL' })
   }
   numeric(name: string) {
-    return this.#column({ name, type: 'NUMERIC', nullable: false })
+    return this.#column({ name, type: 'NUMERIC' })
   }
 
   // bigInteger(name: string) {
-  //   return this.#column({ name, type: 'BIGINT', nullable: false })
+  //   return this.#column({ name, type: 'BIGINT' })
   // }
 
   // tinyInteger(name: string) {
-  //   return this.#column({ name, type: 'TINYINT', nullable: false })
+  //   return this.#column({ name, type: 'TINYINT' })
   // }
 
   boolean(name: string) {
-    return this.#column({ name, type: 'INTEGER', nullable: false })
+    return this.#column({ name, type: 'INTEGER' })
   }
 
   // decimal(name: string, precision: number = 8, scale: number = 2) {
-  //   return this.#column({ name, type: `DECIMAL(${precision},${scale})`, nullable: false })
+  //   return this.#column({ name, type: `DECIMAL(${precision},${scale})` })
   // }
 
   // float(name: string) {
-  //   return this.#column({ name, type: 'FLOAT', nullable: false })
+  //   return this.#column({ name, type: 'FLOAT' })
   // }
 
   // double(name: string) {
-  //   return this.#column({ name, type: 'DOUBLE', nullable: false })
+  //   return this.#column({ name, type: 'DOUBLE' })
   // }
 
   // date(name: string) {
-  //   return this.#column({ name, type: 'DATE', nullable: false })
+  //   return this.#column({ name, type: 'DATE' })
   // }
 
   // dateTime(name: string) {
-  //   return this.#column({ name, type: 'DATETIME', nullable: false })
+  //   return this.#column({ name, type: 'DATETIME' })
   // }
 
   // timestamp(name: string) {
-  //   return this.#column({ name, type: 'TIMESTAMP', nullable: false })
+  //   return this.#column({ name, type: 'TIMESTAMP' })
   // }
 
   // time(name: string) {
-  //   return this.#column({ name, type: 'TIME', nullable: false })
+  //   return this.#column({ name, type: 'TIME' })
   // }
 
-  json(name: string) {
-    return this.#column({ name, type: 'JSON', nullable: false })
-  }
+  // json(name: string) {
+  //   return this.#column({ name, type: 'JSON' })
+  // }
 
-  enum(name: string, values: string[]) {
-    return this.#column({ name, type: `ENUM(${values.map(v => `'${v}'`).join(', ')})`, nullable: false })
+  enum(name: string, values: string[] | number[]) {
+    return this.#column({
+      name,
+      type: values.every(v => typeof v == 'string') ? 'TEXT' : (values.every(v => Number.isInteger(v)) ? 'INTEGER' : 'REAL'),
+      // TODO:
+      // Checking floating-point numbers can be problematic due to the precision of REAL numbers
+      // SQLite might store 0.5 as 0.4999999 or 0.5000001, causing the check to fail
+      // Maybe works:
+      //   rate NUMERIC(3,1) NOT NULL DEFAULT 0 CHECK(
+      //     rate IN (0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5)
+      //   )
+      raw: `CHECK(${name} IN (${values.map(v => typeof v == 'string' ? `'${v.replace(/'/g, "\\'")}'` : v).join(', ')}))`,
+    })
   }
 
   blob(name: string) {
-    return this.#column({ name, type: 'BLOB', nullable: false })
+    return this.#column({ name, type: 'BLOB' })
   }
 
-  timestamps() {
-    this.#column({ name: 'created_at', type: 'TEXT', nullable: false })
-    this.#column({ name: 'updated_at', type: 'TEXT', nullable: false })
+  timestamps(columnType: 'int' | 'date' = 'int') {
+    const isInt = columnType == 'int'
+    const type = isInt ? 'INTEGER' : 'DATETIME'
+    this.#column({ name: 'created_at', type, raw: 'DEFAULT '+ (isInt ? '(unixepoch())' : 'CURRENT_TIMESTAMP') })
+    this.#column({ name: 'updated_at', type, nullable: true })
     return this
   }
 
-  softDelete(name: string = 'deleted_at') {
-    this.#column({ name, type: 'TEXT', nullable: true })
+  softDelete(columnType: 'int' | 'date' = 'int', name: string = 'deleted_at') {
+    this.#column({ name, type: columnType == 'int' ? 'INTEGER' : 'DATETIME', nullable: true })
     return this
   }
-
-  softDeletes(name: string = 'deleted_at') {
-    return this.softDelete(name)
+  softDeletes(columnType: 'int' | 'date' = 'int', name: string = 'deleted_at') {
+    return this.softDelete(columnType, name)
   }
 
   foreign(column: string) {

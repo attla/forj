@@ -41,28 +41,40 @@ export class Schema {
   //   this.#addStatement(...sql)
   // }
 
-  static async create(tableName: string, fn: BlueprintFn): Promise<void> {
-    const blueprint = new Blueprint(tableName)
+  static async create(table: string, fn: BlueprintFn, exist: boolean = false): Promise<void> {
+    const blueprint = new Blueprint(table)
     fn(blueprint)
-    await this.#addStatement(Builder.create(blueprint))
+    await this.#addStatement(Builder.create(blueprint, exist))
   }
 
-  static async table(tableName: string, fn: BlueprintFn): Promise<void> {
-    const blueprint = new Blueprint(tableName)
+  static async createIfNotExists(table: string, fn: BlueprintFn): Promise<void> {
+    this.create(table, fn, true)
+  }
+
+  static async table(table: string, fn: BlueprintFn): Promise<void> {
+    const blueprint = new Blueprint(table)
     fn(blueprint)
     await this.#addStatement(Builder.alter(blueprint))
   }
 
-  static async drop(tableName: string): Promise<void> {
-    await this.#addStatement(Builder.drop(tableName))
+  static async drop(table: string): Promise<void> {
+    await this.#addStatement(Builder.drop(table))
   }
 
-  static async dropIfExists(tableName: string): Promise<void> {
-    await this.#addStatement(Builder.dropIfExists(tableName))
+  static async dropIfExists(table: string): Promise<void> {
+    await this.#addStatement(Builder.dropIfExists(table))
   }
 
   static async rename(from: string, to: string): Promise<void> {
     await this.#addStatement(Builder.rename(from, to))
+  }
+
+  static async dropView(view: string): Promise<void> {
+    await this.#addStatement(Builder.dropView(view))
+  }
+
+  static async dropViewIfExists(view: string): Promise<void> {
+    await this.#addStatement(Builder.dropViewIfExists(view))
   }
 
   static async disableForeignKeyConstraints(): Promise<void> {
@@ -92,29 +104,29 @@ export class Schema {
   //   await this.#addStatement(sql)
   // }
 
-  // static async hasTable(tableName: string): Promise<boolean> {
+  // static async hasTable(table: string): Promise<boolean> {
   //   if (!this.#c)
   //     throw new Error('Database connection not set')
 
-  //   const sql = Builder.hasTable(tableName)
+  //   const sql = Builder.hasTable(table)
   //   const result = await this.#c.query(sql)
   //   return result.length > 0
   // }
 
-  // static async hasColumn(tableName: string, columnName: string): Promise<boolean> {
+  // static async hasColumn(table: string, columnName: string): Promise<boolean> {
   //   if (!this.#c)
   //     throw new Error('Database connection not set')
 
-  //   const sql = Builder.hasColumn(tableName, columnName)
+  //   const sql = Builder.hasColumn(table, columnName)
   //   const result = await this.#c.query(sql)
   //   return result.some((row: any) => row.name === columnName)
   // }
 
-  // static async hasColumns(tableName: string, ...columnNames: string[]): Promise<boolean> {
+  // static async hasColumns(table: string, ...columnNames: string[]): Promise<boolean> {
   //   if (!this.#c)
   //     throw new Error('Database connection not set')
 
-  //   const sql = Builder.hasColumn(tableName, '')
+  //   const sql = Builder.hasColumn(table, '')
   //   const result = await this.#c.query(sql)
   //   const existingColumns = result.map((row: any) => row.name)
 
@@ -130,20 +142,20 @@ export class Schema {
   //   return result.map((row: any) => row.name)
   // }
 
-  // static async getColumns(tableName: string): Promise<any[]> {
+  // static async getColumns(table: string): Promise<any[]> {
   //   if (!this.#c)
   //     throw new Error('Database connection not set')
 
-  //   const sql = Builder.getColumns(tableName)
+  //   const sql = Builder.getColumns(table)
   //   return await this.#c.query(sql)
   // }
 
-  // static async getColumnType(tableName: string, columnName: string): Promise<string | null> {
+  // static async getColumnType(table: string, columnName: string): Promise<string | null> {
   //   if (!this.#c) {
   //     throw new Error('Database connection not set')
   //   }
 
-  //   const sql = Builder.getColumns(tableName)
+  //   const sql = Builder.getColumns(table)
   //   const result = await this.#c.query(sql)
   //   const column = result.find((row: any) => row.name === columnName)
   //   return column ? column.type : null

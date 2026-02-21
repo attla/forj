@@ -45,7 +45,6 @@ function newQB<
 }
 
 describe('Query Builder', () => {
-  // return
 
   it('SELECT', () => {
     let qb = newQB()
