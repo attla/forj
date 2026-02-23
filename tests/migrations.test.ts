@@ -14,20 +14,23 @@ describe('Migrations', () => {
   balance NUMERIC NOT NULL,
   is_active INTEGER NOT NULL DEFAULT 1,
   is_verified INTEGER NOT NULL DEFAULT 0,
-  created_at INTEGER NOT NULL DEFAULT (unixepoch()),
+  created_at INTEGER DEFAULT (unixepoch()),
   updated_at INTEGER,
-  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME,
   deleted_at INTEGER,
   role TEXT NOT NULL DEFAULT 'user' CHECK(role IN ('admin', 'user', 'guest')),
   score INTEGER NOT NULL DEFAULT 0 CHECK(score IN (0, 1, 2, 3, 4, 5)),
   avatar BLOB NOT NULL,
+  role_id INTEGER REFERENCES roles(id) ON DELETE CASCADE ON UPDATE RESTRICT,
+  app_id INTEGER,
   KEY users_username_index (username),
   UNIQUE KEY users_email_unique (email),
   PRIMARY KEY (id),
   KEY full_name_index (first_name, last_name),
   UNIQUE KEY unique_email_username (email, username),
-  PRIMARY KEY (id, tenant_id)
+  PRIMARY KEY (id, tenant_id),
+  FOREIGN KEY (app_id) REFERENCES apps(id) ON DELETE CASCADE
 );`,
     drop: 'DROP TABLE users;',
     dropIfExists: 'DROP TABLE IF EXISTS users;',
@@ -69,6 +72,39 @@ describe('Migrations', () => {
       // table.enum('rate', [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5]).default(0) // TODO: problematic..
       table.blob('avatar') // TODO: needs a deeep test..
 
+      table.foreignId('role_id').nullable() // TODO: resolve problems on ALTER TABLE..
+// CREATE TABLE table_new_pk (
+// id INTEGER PRIMARY KEY,
+
+// app_id INTEGER NOT NULL,
+
+// name TEXT,
+
+// FOREIGN KEY (app_id) REFERENCES apps(id) ON DELETE CASCADE
+// );
+
+// -- 2. Copy data:
+// INSERT INTO table_new_pk (id, app_id, name)
+// SELECT id, app_id, name FROM tabela_filha;
+
+// -- 3. Remove the old table:
+// -- DROP TABLE tabela_filha;
+
+// -- 4. Rename the new table:
+// -- ALTER TABLE table_new_pk RENAME TO tabela_filha;
+
+      table.int('app_id').nullable()
+      table.foreign('app_id')
+        .references('id')
+        .on('apps')
+        .onDelete('CASCADE')
+        // .onUpdate('restrict')
+
+      // Composite foreign key
+      // table.foreign(['user_id', 'team_id'])
+      //   .references(['id', 'team_id'])
+      //   .on('user_teams')
+
       // Indexes (single column)
       table.index('username')
       table.unique('email')
@@ -76,25 +112,6 @@ describe('Migrations', () => {
       table.index(['first_name', 'last_name'], 'full_name_index')
       table.unique(['email', 'username'], 'unique_email_username')
       table.primary(['id', 'tenant_id'])
-
-      // Foreign keys
-      // table.index('user_id')
-      // table.foreign('user_id')
-      //   .references('id')
-      //   .on('users')
-      //   .onDelete('CASCADE')
-      //   .onUpdate('CASCADE')
-
-      // table.index('category_id')
-      // table.foreign('category_id')
-      //   .references('id')
-      //   .on('categories')
-      //   .nullable()
-
-      // Composite foreign key
-      // table.foreign(['user_id', 'team_id'])
-      //   .references(['id', 'team_id'])
-      //   .on('user_teams')
     },
   }
 

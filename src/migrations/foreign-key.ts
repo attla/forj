@@ -1,4 +1,4 @@
-import type { ForeignKeyDefinition } from './types'
+import type { ForeignKeyDefinition, ForeignKeyAction } from './types'
 
 export default class ForeignKey {
   constructor(private fk: ForeignKeyDefinition) {}
@@ -13,12 +13,12 @@ export default class ForeignKey {
     return this
   }
 
-  onDelete(action: 'cascade' | 'set null' | 'restrict' | 'no action') {
+  onDelete(action: ForeignKeyAction) {
     this.fk.onDelete = action;
     return this;
   }
 
-  onUpdate(action: 'cascade' | 'set null' | 'restrict' | 'no action') {
+  onUpdate(action: ForeignKeyAction) {
     this.fk.onUpdate = action
     return this
   }

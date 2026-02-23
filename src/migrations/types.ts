@@ -6,7 +6,7 @@ export type BlueprintFn = (table: Blueprint) => void
 
 // TODO: refactor bellow
 
-export interface ColumnDefinition {
+export type ColumnDefinition = {
   name: string,
   type: string,
   length?: number,
@@ -19,26 +19,30 @@ export interface ColumnDefinition {
   index?: boolean,
   comment?: string,
   raw?: string,
+  references?: string,
+  on?: string,
+  onDelete?: ForeignKeyAction,
+  onUpdate?: ForeignKeyAction,
 }
 
-export interface IndexDefinition {
+export type IndexDefinition = {
   columns: string[],
   type: 'index' | 'unique' | 'primary',
   name?: string,
 }
 
-export interface ForeignKeyDefinition {
-  column: string,
+export type ForeignKeyDefinition = {
+  name: string,
   references: string,
   on: string,
-  onDelete?: 'cascade' | 'set null' | 'restrict' | 'no action',
-  onUpdate?: 'cascade' | 'set null' | 'restrict' | 'no action',
+  onDelete?: ForeignKeyAction,
+  onUpdate?: ForeignKeyAction,
 }
 
 export type QueueType = 'pending' | 'migrated'
 export type Queue = Record<QueueType, MigrationInfo[]>
 
-export interface MigrationInfo {
+export type MigrationInfo = {
   timestamp: number,
   name: string,
   className: string,
@@ -48,7 +52,7 @@ export interface MigrationInfo {
   migrated: boolean,
 }
 
-export interface MigrationRecord {
+export type MigrationRecord = {
   migration: string;
   batch: number;
   executed_at: Date;
@@ -63,6 +67,8 @@ export type MigrationClass = {
   // toSQL?(): Promise<string>;
   // getMigrationName?(): string;
 }
+
+export type ForeignKeyAction = 'cascade' | 'set null' | 'restrict' | 'no action' | 'CASCADE' | 'SET NULL' | 'RESTRICT' | 'NO ACTION'
 
 // export interface SchemaConnection {
 //   execute(sql: string): Promise<any>,

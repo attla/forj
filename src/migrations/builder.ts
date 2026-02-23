@@ -88,6 +88,9 @@ export default class SchemaBuilder {
     if (column.raw)
       sql += ' '+ column.raw
 
+    if (column.references && column.on)
+      sql += this.#foreignKey(column, true)
+
     // if (column.comment)
     //   sql += ` COMMENT '${column.comment.replace(/'/g, "''")}'`
 
@@ -128,8 +131,8 @@ export default class SchemaBuilder {
     }
   }
 
-  static #foreignKey(fk: ForeignKeyDefinition): string {
-    let sql = `FOREIGN KEY (${fk.column}) REFERENCES ${fk.on}(${fk.references})`
+  static #foreignKey(fk: ColumnDefinition | ForeignKeyDefinition, column: boolean = false): string {
+    let sql = (column ? '' : `FOREIGN KEY (${fk.name})`) +` REFERENCES ${fk.on}(${fk.references})`
 
     if (fk.onDelete)
       sql += ` ON DELETE ${fk.onDelete.toUpperCase()}`

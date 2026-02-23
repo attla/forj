@@ -1,3 +1,4 @@
+import pluralize from 'pluralize'
 import Column from './column'
 import ForeignKey from './foreign-key'
 import { tableName } from '../utils'
@@ -114,7 +115,7 @@ export class Blueprint {
   timestamps(columnType: 'int' | 'date' = 'int') {
     const isInt = columnType == 'int'
     const type = isInt ? 'INTEGER' : 'DATETIME'
-    this.#column({ name: 'created_at', type, raw: 'DEFAULT '+ (isInt ? '(unixepoch())' : 'CURRENT_TIMESTAMP') })
+    this.#column({ name: 'created_at', type, nullable: true, raw: 'DEFAULT '+ (isInt ? '(unixepoch())' : 'CURRENT_TIMESTAMP') })
     this.#column({ name: 'updated_at', type, nullable: true })
     return this
   }
@@ -127,8 +128,22 @@ export class Blueprint {
     return this.softDelete(columnType, name)
   }
 
-  foreign(column: string) {
-    const fk: ForeignKeyDefinition = { column, references: '', on: '' }
+  foreignId(name: string) {
+    const opts = { name, type: 'INTEGER', onDelete: 'CASCADE', onUpdate: 'RESTRICT' } as ColumnDefinition
+    const sufixIndex = name.lastIndexOf('_id')
+
+    if (sufixIndex > -1)
+      return this.#column({
+        ...opts,
+        references: name.substring(sufixIndex + 1),
+        on: pluralize(name.substring(0, sufixIndex)),
+      })
+
+    return this.#column(opts)
+  }
+
+  foreign(name: string) {
+    const fk: ForeignKeyDefinition = { name, references: '', on: '' }
     this.#foreignKeys.push(fk)
     return new ForeignKey(fk)
   }
