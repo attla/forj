@@ -56,6 +56,7 @@ export class Schema {
   }
 
   static createPivot(table: string, fn: BlueprintFn): void
+  static createPivot(table: string, columns: string[]): void
   static createPivot(table: string, columns: string[], fn: BlueprintFn): void
   static createPivot(table: string, columns: string[] | BlueprintFn, fn?: BlueprintFn) {
     const hasColumn = Array.isArray(columns)

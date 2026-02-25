@@ -39,9 +39,9 @@ describe('Migrations', () => {
 ) WITHOUT ROWID;`,
     createPivotUnsigned: `CREATE TABLE edges (
   type INTEGER NOT NULL,
-  from INTEGER NOT NULL,
-  to INTEGER NOT NULL,
-  PRIMARY KEY (type, from, to)
+  "from" INTEGER NOT NULL,
+  "to" INTEGER NOT NULL,
+  PRIMARY KEY (type, "from", "to")
 ) WITHOUT ROWID;`,
     drop: 'DROP TABLE users;',
     dropIfExists: 'DROP TABLE IF EXISTS users;',

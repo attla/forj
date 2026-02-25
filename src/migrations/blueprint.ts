@@ -1,7 +1,6 @@
 import pluralize from 'pluralize'
 import Column from './column'
 import ForeignKey from './foreign-key'
-import { tableName } from '../utils'
 import type {
   ColumnDefinition, IndexDefinition, ForeignKeyDefinition,
 } from './types'
@@ -15,7 +14,7 @@ export class Blueprint {
   #renameColumns: Map<string, string> = new Map()
 
   constructor(table: string) {
-    this.#table = tableName(table)
+    this.#table = table
   }
 
   #column(definition: ColumnDefinition) {

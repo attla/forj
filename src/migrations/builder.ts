@@ -1,10 +1,10 @@
 import { Blueprint } from './blueprint'
-import { tableName, tableSlug } from '../utils'
+import { sqlName, tableSlug } from '../utils'
 import type { ColumnDefinition, IndexDefinition, ForeignKeyDefinition } from './types'
 
 export default class SchemaBuilder {
   static create(blueprint: Blueprint, exist: boolean = false): string {
-    const table = blueprint.table
+    const table = sqlName(blueprint.table)
     const columns = blueprint.columns
     const indexes = blueprint.indexes
     const foreignKeys = blueprint.foreignKeys
@@ -23,7 +23,7 @@ export default class SchemaBuilder {
   }
 
   static alter(blueprint: Blueprint): string[] {
-    const table = blueprint.table
+    const table = sqlName(blueprint.table)
     const statements: string[] = []
 
     const columns = blueprint.columns
@@ -31,10 +31,10 @@ export default class SchemaBuilder {
       columns.forEach(col => statements.push(`ALTER TABLE ${table} ADD COLUMN ${this.#column(col)};`))
 
     const dropColumns = blueprint.dropColumns
-    dropColumns.forEach(col => statements.push(`ALTER TABLE ${table} DROP COLUMN ${col};`))
+    dropColumns.forEach(col => statements.push(`ALTER TABLE ${table} DROP COLUMN ${sqlName(col)};`))
 
     const renameColumns = blueprint.renameColumns
-    renameColumns.forEach((newName, oldName) => statements.push(`ALTER TABLE ${table} RENAME COLUMN ${oldName} TO ${newName};`))
+    renameColumns.forEach((newName, oldName) => statements.push(`ALTER TABLE ${table} RENAME COLUMN ${sqlName(oldName)} TO ${sqlName(newName)};`))
 
     const indexes = blueprint.indexes
     indexes.forEach(idx => {
@@ -49,7 +49,7 @@ export default class SchemaBuilder {
   }
 
   static #column(column: ColumnDefinition) {
-    let sql = `${column.name} ${column.type}`
+    let sql = `${sqlName(column.name)} ${column.type}`
 
     if (column.length && !column.type.includes('('))
       sql += `(${column.length})`
@@ -99,8 +99,8 @@ export default class SchemaBuilder {
 
   static #index(index: IndexDefinition, table: string): string {
     const indexName = index.name || tableSlug(table) +`_${index.columns.join('_')}_${index.type}`
-    const columns = index.columns.join(', ')
-    table = tableName(table)
+    const columns = index.columns.map(column => sqlName(column)).join(', ')
+    table = sqlName(table)
 
     switch (index.type) {
       case 'primary':
@@ -116,8 +116,8 @@ export default class SchemaBuilder {
 
   static #indexStatement(index: IndexDefinition, table: string): string {
     const indexName = index.name || tableSlug(table) +`_${index.columns.join('_')}_${index.type}`
-    const columns = index.columns.join(', ')
-    table = tableName(table)
+    const columns = index.columns.map(column => sqlName(column)).join(', ')
+    table = sqlName(table)
 
     switch (index.type) {
       case 'primary':
@@ -132,7 +132,7 @@ export default class SchemaBuilder {
   }
 
   static #foreignKey(fk: ColumnDefinition | ForeignKeyDefinition, column: boolean = false): string {
-    let sql = (column ? '' : `FOREIGN KEY (${fk.name})`) +` REFERENCES ${fk.on}(${fk.references})`
+    let sql = (column ? '' : `FOREIGN KEY (${sqlName(fk.name)})`) +` REFERENCES ${sqlName(fk.on)}(${sqlName(fk.references)})`
 
     if (fk.onDelete)
       sql += ` ON DELETE ${fk.onDelete.toUpperCase()}`
@@ -144,7 +144,7 @@ export default class SchemaBuilder {
   }
 
   static drop(table: string, exist: boolean = false) {
-    return `DROP TABLE ${exist ? 'IF EXISTS ' : ''}${tableName(table)};`
+    return `DROP TABLE ${exist ? 'IF EXISTS ' : ''}${sqlName(table)};`
   }
 
   static dropIfExists(table: string) {
@@ -152,7 +152,7 @@ export default class SchemaBuilder {
   }
 
   static dropView(view: string, exist: boolean = false) {
-    return `DROP VIEW ${exist ? 'IF EXISTS ' : ''}[${tableName(view)}];`
+    return `DROP VIEW ${exist ? 'IF EXISTS ' : ''}[${sqlName(view)}];`
   }
 
   static dropViewIfExists(view: string) {
@@ -160,15 +160,15 @@ export default class SchemaBuilder {
   }
 
   static rename(from: string, to: string) {
-    return `ALTER TABLE ${tableName(from)} RENAME TO ${tableName(to)};`
+    return `ALTER TABLE ${sqlName(from)} RENAME TO ${sqlName(to)};`
   }
 
   static hasTable(table: string) {
-    return `SELECT name FROM sqlite_master WHERE type='table' AND name='${tableName(table)}';`
+    return `SELECT name FROM sqlite_master WHERE type='table' AND name='${sqlName(table)}';`
   }
 
   static hasColumn(table: string, columnName: string) { // TODO refactor..
-    return `PRAGMA table_info(${tableName(table)});`
+    return `PRAGMA table_info(${sqlName(table)});`
   }
 
   static getAllTables() {
@@ -176,10 +176,10 @@ export default class SchemaBuilder {
   }
 
   static getColumns(table: string): string {
-    return `PRAGMA table_info(${tableName(table)});`
+    return `PRAGMA table_info(${sqlName(table)});`
   }
 
   static dropAllTables(tables: string[]) {
-    return tables.map(table => `DROP TABLE IF EXISTS ${tableName(table)};`)
+    return tables.map(table => `DROP TABLE IF EXISTS ${sqlName(table)};`)
   }
 }

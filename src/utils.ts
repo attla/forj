@@ -153,7 +153,7 @@ export const SQLITE_KEYWORDS = new Set([
   'WHERE', 'WINDOW', 'WITH', 'WITHOUT',
 ])
 
-export function tableName(name: string) {
+export function sqlName(name?: string) {
 	return !name
 		|| !name.match(/^[a-zA-Z_]/)
 		|| name.match(/\W/)
