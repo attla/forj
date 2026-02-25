@@ -32,6 +32,17 @@ describe('Migrations', () => {
   PRIMARY KEY (id, tenant_id),
   FOREIGN KEY (app_id) REFERENCES apps(id) ON DELETE CASCADE
 );`,
+    createPivot: `CREATE TABLE user_roles (
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE ON UPDATE RESTRICT,
+  role_id INTEGER NOT NULL REFERENCES roles(id) ON DELETE CASCADE ON UPDATE RESTRICT,
+  PRIMARY KEY (user_id, role_id)
+) WITHOUT ROWID;`,
+    createPivotUnsigned: `CREATE TABLE edges (
+  type INTEGER NOT NULL,
+  from INTEGER NOT NULL,
+  to INTEGER NOT NULL,
+  PRIMARY KEY (type, from, to)
+) WITHOUT ROWID;`,
     drop: 'DROP TABLE users;',
     dropIfExists: 'DROP TABLE IF EXISTS users;',
     dropView: 'DROP VIEW [users];',
@@ -118,6 +129,10 @@ describe('Migrations', () => {
   const cases = [
     ['create', ['users', fn.create], 'CREATE TABLE users'+ result.create],
     ['createIfNotExists', ['db users', fn.create], 'CREATE TABLE IF NOT EXISTS "db users"'+ result.create.replaceAll('users_', 'db_users_')],
+    ['createPivot', ['user_roles', ['user_id', 'role_id']], result.createPivot],
+    ['createPivot_Unsigned', ['edges', ['from', 'to'], (table: Blueprint) => {
+      table.int('type')
+    }], result.createPivotUnsigned],
     ['drop', ['users'], result.drop],
     ['dropIfExists', ['users'], result.dropIfExists],
     ['dropView', ['users'], result.dropView],
@@ -125,9 +140,9 @@ describe('Migrations', () => {
   ] as const
 
   cases.forEach(([method, args, sql]) => {
-    it(method.replace(/([A-Z])/g, ' $1').toUpperCase(), () => {
+    it(method.replace(/_?([A-Z])/g, ' $1').toUpperCase(), () => {
       Schema.clearStatements() // @ts-ignore
-      Schema[method](...args)
+      Schema[method.split('_')[0]](...args)
       expect(Schema.sql).toBe(sql)
     })
   })

@@ -31,7 +31,7 @@ export class Schema {
   }
 
   // mudei tudo this.#executeSql -> this.#addStatement
-  // static async #executeSql(...sql: string[] | string[][]): Promise<void> {
+  // static #executeSql(...sql: string[] | string[][]) {
   //   sql = sql.flat(Infinity) as string[]
   //   // if (this.#c) {
   //   //   for (const statement of sql) {
@@ -41,50 +41,65 @@ export class Schema {
   //   this.#addStatement(...sql)
   // }
 
-  static async create(table: string, fn: BlueprintFn, exist: boolean = false): Promise<void> {
+  static #blueprint(table: string, ...fns: BlueprintFn[]) {
     const blueprint = new Blueprint(table)
-    fn(blueprint)
-    await this.#addStatement(Builder.create(blueprint, exist))
+    fns.flatMap(fn => fn && fn(blueprint))
+    return blueprint
   }
 
-  static async createIfNotExists(table: string, fn: BlueprintFn): Promise<void> {
+  static create(table: string, fn: BlueprintFn, exist: boolean = false) {
+    this.#addStatement(Builder.create(this.#blueprint(table, fn), exist))
+  }
+
+  static createIfNotExists(table: string, fn: BlueprintFn) {
     this.create(table, fn, true)
   }
 
-  static async table(table: string, fn: BlueprintFn): Promise<void> {
-    const blueprint = new Blueprint(table)
-    fn(blueprint)
-    await this.#addStatement(Builder.alter(blueprint))
+  static createPivot(table: string, fn: BlueprintFn): void
+  static createPivot(table: string, columns: string[], fn: BlueprintFn): void
+  static createPivot(table: string, columns: string[] | BlueprintFn, fn?: BlueprintFn) {
+    const hasColumn = Array.isArray(columns)
+    columns = hasColumn ? columns as string[] : [] // @ts-ignore
+    fn = hasColumn ? fn : columns
+
+    this.#addStatement(Builder.create(this.#blueprint(table, fn as BlueprintFn, (table: Blueprint) => {
+      columns.forEach(column => table.foreignId(column))
+      table.primary(table.columns.map(c => c.name))
+    })).slice(0, -1) + ' WITHOUT ROWID;')
   }
 
-  static async drop(table: string): Promise<void> {
-    await this.#addStatement(Builder.drop(table))
+  static table(table: string, fn: BlueprintFn) {
+    this.#addStatement(Builder.alter(this.#blueprint(table, fn)))
   }
 
-  static async dropIfExists(table: string): Promise<void> {
-    await this.#addStatement(Builder.dropIfExists(table))
+  static drop(table: string) {
+    this.#addStatement(Builder.drop(table))
   }
 
-  static async rename(from: string, to: string): Promise<void> {
-    await this.#addStatement(Builder.rename(from, to))
+  static dropIfExists(table: string) {
+    this.#addStatement(Builder.dropIfExists(table))
   }
 
-  static async dropView(view: string): Promise<void> {
-    await this.#addStatement(Builder.dropView(view))
+  static rename(from: string, to: string) {
+    this.#addStatement(Builder.rename(from, to))
   }
 
-  static async dropViewIfExists(view: string): Promise<void> {
-    await this.#addStatement(Builder.dropViewIfExists(view))
+  static dropView(view: string) {
+    this.#addStatement(Builder.dropView(view))
   }
 
-  static async disableForeignKeyConstraints(): Promise<void> {
+  static dropViewIfExists(view: string) {
+    this.#addStatement(Builder.dropViewIfExists(view))
+  }
+
+  static disableForeignKeyConstraints() {
     this.#foreignKeyConstraintsEnabled = false
-    await this.#addStatement('PRAGMA foreign_keys = OFF;')
+    this.#addStatement('PRAGMA foreign_keys = OFF;')
   }
 
-  static async enableForeignKeyConstraints(): Promise<void> {
+  static enableForeignKeyConstraints() {
     this.#foreignKeyConstraintsEnabled = true
-    await this.#addStatement('PRAGMA foreign_keys = ON;')
+    this.#addStatement('PRAGMA foreign_keys = ON;')
   }
 
   static isForeignKeyConstraintsEnabled(): boolean {
@@ -98,13 +113,13 @@ export class Schema {
     return this.sql
   }
 
-  // static async dropAllTables(): Promise<void> {
+  // static dropAllTables() {
   //   const tables = await this.getAllTables()
   //   const sql = Builder.dropAllTables(tables)
-  //   await this.#addStatement(sql)
+  //   this.#addStatement(sql)
   // }
 
-  // static async hasTable(table: string): Promise<boolean> {
+  // static hasTable(table: string): Promise<boolean> {
   //   if (!this.#c)
   //     throw new Error('Database connection not set')
 
@@ -113,7 +128,7 @@ export class Schema {
   //   return result.length > 0
   // }
 
-  // static async hasColumn(table: string, columnName: string): Promise<boolean> {
+  // static hasColumn(table: string, columnName: string): Promise<boolean> {
   //   if (!this.#c)
   //     throw new Error('Database connection not set')
 
@@ -122,7 +137,7 @@ export class Schema {
   //   return result.some((row: any) => row.name === columnName)
   // }
 
-  // static async hasColumns(table: string, ...columnNames: string[]): Promise<boolean> {
+  // static hasColumns(table: string, ...columnNames: string[]): Promise<boolean> {
   //   if (!this.#c)
   //     throw new Error('Database connection not set')
 
@@ -133,7 +148,7 @@ export class Schema {
   //   return columnNames.every(col => existingColumns.includes(col))
   // }
 
-  // static async getAllTables(): Promise<string[]> {
+  // static getAllTables(): Promise<string[]> {
   //   if (!this.#c)
   //     throw new Error('Database connection not set')
 
@@ -142,7 +157,7 @@ export class Schema {
   //   return result.map((row: any) => row.name)
   // }
 
-  // static async getColumns(table: string): Promise<any[]> {
+  // static getColumns(table: string): Promise<any[]> {
   //   if (!this.#c)
   //     throw new Error('Database connection not set')
 
@@ -150,7 +165,7 @@ export class Schema {
   //   return await this.#c.query(sql)
   // }
 
-  // static async getColumnType(table: string, columnName: string): Promise<string | null> {
+  // static getColumnType(table: string, columnName: string): Promise<string | null> {
   //   if (!this.#c) {
   //     throw new Error('Database connection not set')
   //   }
