@@ -79,9 +79,8 @@ export default class ClauseBuilder<
     // @ts-ignore
     column = parseColumn(String(column), this.#table)
 
-    if (this.#schema && !zSame(column, value, this.#schema)) {
+    if (this.#schema && !zSame(column.replace(/"/g, ''), value, this.#schema))
       throw new Error(`Table column '${String(column)}' of type '${zType(column, this.#schema)}' is not assignable as type of '${typeof value}'.`)
-    }
 
     return isJoinCompare(value, this.#schema) // @ts-ignore
       ? this.#clause(`${column} ${operator} ${value}`, [], logical) // @ts-ignore

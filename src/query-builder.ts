@@ -5,6 +5,7 @@ import {
   formatValue,
   isJoinCompare,
   zSame, zType,
+  sqlName,
 } from './utils'
 import type {
   IJoinBuilder, IClauseBuilder,
@@ -89,7 +90,7 @@ export default class QueryBuilder<
     ...args: JoinArgs<S, J>
   ) {
     this.#hasJoin = true
-    const query = (type ? type + ' ' : '') + `JOIN ${table as string} ON `
+    const query = (type ? type + ' ' : '') + `JOIN ${sqlName(table as string)} ON `
 
     if (typeof args[0] == 'function') {
       const join = new ClauseBuilder<S[J]>(table as string, this.#schema)
@@ -107,7 +108,6 @@ export default class QueryBuilder<
       value = operator
       operator = '='
     } else if (length == 3 && !isOperator(operator)) { // @ts-ignore
-      // console.log(column, operator, value, value2) // @ts-ignore
       value = parseColumn(value as string, operator as string) // TODO: check if value is a valid column
 
       if (this.#schema && !isJoinCompare(value, this.#schema))
@@ -115,16 +115,16 @@ export default class QueryBuilder<
 
       operator = '='
     } else if (length == 4) { // @ts-ignore
-      // console.log(column, operator, value, value2) // @ts-ignore
       value = parseColumn(value2 as string, value as string)
       operator = '='
     }
 
     const col = parseColumn(String(column), String(table))
-    if (this.#schema && !zSame(col, value, this.#schema))
-      throw new Error(`Table column '${col}' of type '${zType(col, this.#schema)}' is not assignable as type of '${typeof value}'.`)
 
-    if (!isJoinCompare(value, this.#schema)) { // @ts-ignore
+    if (!isJoinCompare(value, this.#schema)) {
+      if (this.#schema && !zSame(col.replace(/"/g, ''), value, this.#schema))
+        throw new Error(`Table column '${col}' of type '${zType(col, this.#schema)}' is not assignable as type of '${typeof value}'.`)
+      // @ts-ignore
       this.#clauses.args = [value] // @ts-ignore // TODO: https://developers.cloudflare.com/d1/worker-api/#type-conversion
       value = '?'
     }

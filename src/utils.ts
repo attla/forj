@@ -25,7 +25,9 @@ export function parseSelectColumn(
 }
 
 export function parseColumn(name: string, table: string, hasJoin: boolean = true) {
-  return !hasJoin || name.includes('.') ? name : table +'.'+ name
+  return !hasJoin || name.includes('.')
+    ? name.split('.').map(col => sqlName(col)).join('.')
+    : sqlName(table) + '.' + sqlName(name)
 }
 
 export function formatValue(value: any): string {
@@ -125,13 +127,17 @@ export const zSame = (key: string, val: any, schema?: any, deep: boolean = false
 }
 
 export function isJoinCompare(val: any, schema?: DBSchema) {
-  // if (!schema) return typeof val == 'string' && val?.includes('.')
-  if (!schema || typeof val != 'string' || !val?.includes('.'))
+  if (typeof val != 'string' || !val?.includes('.'))
     return false
 
-  const keys = zGet(val, schema)
+  if (!schema)
+    return true
+
+  const keys = zGet(val.replace(/"/g, ''), schema)
+  // const keys = zGet(val, schema)
   return keys && keys?.length
 }
+
 // List taken from `aKeywordTable` in https://github.com/sqlite/sqlite/blob/378bf82e2bc09734b8c5869f9b148efe37d29527/tool/mkkeywordhash.c#L172
 // prettier-ignore
 export const SQLITE_KEYWORDS = new Set([

@@ -98,11 +98,11 @@ describe('Query Builder', () => {
       .whereNull('soldout')
       .whereNotNull('deleted_at')
 
-    const sql = 'SELECT * FROM products WHERE (products.name LIKE ? OR products.name LIKE ?) OR (products.section_id >= ? OR products.section_id <= ?) AND (products.price BETWEEN ? AND ? AND products.stock NOT BETWEEN ? AND ?) AND products.user_id = ? AND products.category_id IN (?, ?) AND products.soldout IS NULL AND products.deleted_at IS NOT NULL'
-    const rawSql = "SELECT * FROM products WHERE (products.name LIKE '%Smartphone%' OR products.name LIKE 'Notebook%') OR (products.section_id >= '24' OR products.section_id <= 42) AND (products.price BETWEEN 100 AND 500 AND products.stock NOT BETWEEN 0 AND 10) AND products.user_id = 42 AND products.category_id IN (4, 2) AND products.soldout IS NULL AND products.deleted_at IS NOT NULL"
+    const query = 'SELECT * FROM products WHERE (products.name LIKE ? OR products.name LIKE ?) OR (products.section_id >= ? OR products.section_id <= ?) AND (products.price BETWEEN ? AND ? AND products.stock NOT BETWEEN ? AND ?) AND products.user_id = ? AND products.category_id IN (?, ?) AND products.soldout IS NULL AND products.deleted_at IS NOT NULL'
+    const sql = "SELECT * FROM products WHERE (products.name LIKE '%Smartphone%' OR products.name LIKE 'Notebook%') OR (products.section_id >= '24' OR products.section_id <= 42) AND (products.price BETWEEN 100 AND 500 AND products.stock NOT BETWEEN 0 AND 10) AND products.user_id = 42 AND products.category_id IN (4, 2) AND products.soldout IS NULL AND products.deleted_at IS NOT NULL"
 
-    expect(qb.query).toBe(sql)
-    expect(qb.sql).toBe(rawSql)
+    expect(qb.query).toBe(query)
+    expect(qb.sql).toBe(sql)
     expect(qb.args).toEqual([
       '%Smartphone%', 'Notebook%', '24', 42, 100, 500, 0, 10, 42, 4, 2,
     ])
@@ -130,24 +130,22 @@ describe('Query Builder', () => {
          .orWhereNull('end')
       ))//.rightJoin('files', 'user_id', 'id')
 
-    const sql = 'SELECT * FROM users JOIN roles ON roles.user_id = ? LEFT JOIN categories ON categories.id = ? AND categories.type != ? INNER JOIN goals ON goals.user_id = ? AND (goals.type IN (?, ?) OR goals.type NOT IN (?, ?) OR goals.end IS NULL)'
-    const rawSql = "SELECT * FROM users JOIN roles ON roles.user_id = 'users.id' LEFT JOIN categories ON categories.id = 42 AND categories.type != '24' INNER JOIN goals ON goals.user_id = 'users.id' AND (goals.type IN (4, '2') OR goals.type NOT IN (3, '1') OR goals.end IS NULL)"
+    const query = 'SELECT * FROM users JOIN roles ON roles.user_id = users.id LEFT JOIN categories ON categories.id = ? AND categories.type != ? INNER JOIN goals ON goals.user_id = users.id AND (goals.type IN (?, ?) OR goals.type NOT IN (?, ?) OR goals."end" IS NULL)'
+    const sql = `SELECT * FROM users JOIN roles ON roles.user_id = users.id LEFT JOIN categories ON categories.id = 42 AND categories.type != '24' INNER JOIN goals ON goals.user_id = users.id AND (goals.type IN (4, '2') OR goals.type NOT IN (3, '1') OR goals."end" IS NULL)`
 
-    expect(qb.query).toBe(sql)
-    expect(qb.sql).toBe(rawSql)
-    expect(qb.args).toEqual(['users.id', 42, '24', 'users.id', 4, '2', 3, '1'])
-
+    expect(qb.query).toBe(query)
+    expect(qb.sql).toBe(sql)
+    expect(qb.args).toEqual([42, '24', 4, '2', 3, '1'])
 
     // schema validations
     expect(() => newQB('users', Schema).join('roles', 'id', 42)).toThrow()
 
 
     // const b = (type?: string) => `SELECT * FROM users ${type ? type + ' ' : ''}JOIN roles ON roles.user_id = users.id`
-    const b = 'SELECT * FROM users JOIN roles ON roles.user_id '
-    const q = b +'= ?'
-    const q2 = b +'= 42'
-    const q3 = b +`= 'users.id'`
-    // const q4 = b +'= 42'
+    const b = 'SELECT * FROM users JOIN roles ON roles.user_id = '
+    const q = b +'users.id'
+    const q2 = b +'42'
+    const q3 = b +'?'
 
     // qb = newQB().join('roles', 'user_id', 42)
     // expect(qb.query).toBe(q)
@@ -158,10 +156,10 @@ describe('Query Builder', () => {
     // expect(qb.sql).toBe(q2)
 
     const cases = [
-      ['user_id', 42, q, q2],
-      ['user_id', '=', 42, q, q2],
-      ['user_id', 'users', 'id', q, q3],
-      ['user_id', '=', 'users', 'id', q, q3],
+      ['user_id', 42, q3, q2],
+      ['user_id', '=', 42, q3, q2],
+      ['user_id', 'users', 'id', q, q],
+      ['user_id', '=', 'users', 'id', q, q],
       // ['user_id', 'users', 42, q, q2], // error   // roles.user_id = users.42
       // ['user_id', '=', 'id', 42, q, q2], // error // roles.user_id = id.42
     ]
