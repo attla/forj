@@ -1,5 +1,6 @@
 import z from 'zod'
 import QueryBuilder from './query-builder'
+import { types } from './utils'
 
 export type text = string
 export type real = number
@@ -15,18 +16,26 @@ export type Values = Value[]
 // export type WriteType = Primitive | ArrayBuffer | ArrayBufferView | undefined
 // export type ReadType = Primitive | any[]
 
+export type QueryType = typeof types[keyof typeof types]
+export type TableOpts = {
+  timestamps?: boolean,
+  createdAt?: boolean,
+  updatedAt?: boolean,
+}
+
 export type Operator = '=' | '!=' | '<' | '>' | '<=' | '>=' | 'LIKE' // | 'IN' | 'NOT IN' | 'BETWEEN' | 'IS NULL' | 'IS NOT NULL'
 export type OrderDirection = 'ASC' | 'DESC' | 'asc' | 'desc'
 
 export type JoinType = 'INNER' | 'LEFT' | 'RIGHT' | 'CROSS'
 
-export type DBSchema = z.ZodObject<any>
+export type DBSchema = z.ZodObject<z.ZodRawShape>
 
-export type SchemaObject = Record<string, z.ZodTypeAny>
-export type SchemaKeys<TSchema extends DBSchema> =
-  TSchema extends z.ZodObject<infer TShape>
+export type SchemaObject = z.ZodRawShape
+
+export type SchemaKeys<TSchema extends DBSchema | SchemaObject> =
+  TSchema extends z.ZodObject<infer TShape extends z.ZodRawShape>
     ? keyof TShape
-    : TSchema extends SchemaObject
+    : TSchema extends z.ZodRawShape
       ? keyof TSchema
       : never
 
@@ -53,65 +62,57 @@ export type Item<B, S extends keyof B, T = Pick<B, S>> = { [K in keyof T]: T[K] 
 
 export type ClauseOperator = 'AND' | 'OR'
 
-export type WhereFn<T, C extends keyof T = keyof T> = (q: IClauseBuilder<T, C>) => void
-export type WhereArgs<T, C extends keyof T = keyof T> = [WhereFn<T, C>] | [C, T[C]] | [C, Operator, T[C]]
+export type WhereFn<T> = (q: IClauseBuilder<T>) => void
+export type WhereArgs<T, C extends keyof T = keyof T> = [WhereFn<T>] | [C, T[C]] | [C, Operator, T[C]]
 
-export interface IClauseBuilder<T, C extends keyof T = keyof T> {
-  where(fn: WhereFn<T, C>): this
-  where(column: C, value: T[C]): this
-  where(column: C, operator: Operator, value: T[C]): this
-  where(...args: WhereArgs<T>): this
+export interface IClauseBuilder<T> {
+  where<K extends keyof T>(column: K, value: T[K]): this
+  where<K extends keyof T>(column: K, operator: Operator, value: T[K]): this
 
-  on(fn: WhereFn<T, C>): this
-  on(column: C, value: T[C]): this
-  on(column: C, operator: Operator, value: T[C]): this
-  on(...args: WhereArgs<T>): this
+  on<K extends keyof T>(column: K, value: T[K]): this
+  on<K extends keyof T>(column: K, operator: Operator, value: T[K]): this
 
-  orWhere(fn: WhereFn<T, C>): this
-  orWhere(column: C, value: T[C]): this
-  orWhere(column: C, operator: Operator, value: T[C]): this
-  orWhere(...args: WhereArgs<T>): this
+  orWhere<K extends keyof T>(column: K, value: T[K]): this
+  orWhere<K extends keyof T>(column: K, operator: Operator, value: T[K]): this
 
-  orOn(fn: WhereFn<T, C>): this
-  orOn(column: C, value: T[C]): this
-  orOn(column: C, operator: Operator, value: T[C]): this
-  orOn(...args: WhereArgs<T>): this
+  orOn<K extends keyof T>(column: K, value: T[K]): this
+  orOn<K extends keyof T>(column: K, operator: Operator, value: T[K]): this
 
-  whereIn(column: C, values: T[C][]): this
-  in(column: C, values: T[C][]): this
+  whereIn<K extends keyof T>(column: K, values: T[K][]): this
+  in<K extends keyof T>(column: K, values: T[K][]): this
 
-  whereNotIn(column: C, values: T[C][]): this
-  notIn(column: C, values: T[C][]): this
+  whereNotIn<K extends keyof T>(column: K, values: T[K][]): this
+  notIn<K extends keyof T>(column: K, values: T[K][]): this
 
-  orWhereIn(column: C, values: T[C][]): this
-  orIn(column: C, values: T[C][]): this
+  orWhereIn<K extends keyof T>(column: K, values: T[K][]): this
+  orIn<K extends keyof T>(column: K, values: T[K][]): this
 
-  orWhereNotIn(column: C, values: T[C][]): this
-  orNotIn(column: C, values: T[C][]): this
+  orWhereNotIn<K extends keyof T>(column: K, values: T[K][]): this
+  orNotIn<K extends keyof T>(column: K, values: T[K][]): this
 
-  whereBetween(column: C, one: T[C], two: T[C]): this
-  between(column: C, one: T[C], two: T[C]): this
+  whereBetween<K extends keyof T>(column: K, one: T[K], two: T[K]): this
+  between<K extends keyof T>(column: K, one: T[K], two: T[K]): this
 
-  orWhereBetween(column: C, one: T[C], two: T[C]): this
-  orBetween(column: C, one: T[C], two: T[C]): this
+  orWhereBetween<K extends keyof T>(column: K, one: T[K], two: T[K]): this
+  orBetween<K extends keyof T>(column: K, one: T[K], two: T[K]): this
 
-  whereNotBetween(column: C, one: T[C], two: T[C]): this
-  notBetween(column: C, one: T[C], two: T[C]): this
+  whereNotBetween<K extends keyof T>(column: K, one: T[K], two: T[K]): this
+  notBetween<K extends keyof T>(column: K, one: T[K], two: T[K]): this
 
-  orWhereNotBetween(column: C, one: T[C], two: T[C]): this
-  orNotBetween(column: C, one: T[C], two: T[C]): this
+  orWhereNotBetween<K extends keyof T>(column: K, one: T[K], two: T[K]): this
+  orNotBetween<K extends keyof T>(column: K, one: T[K], two: T[K]): this
 
-  whereNull(column: C): this
-  onNull(column: C): this
+  whereNull<K extends keyof T>(column: K): this
+  onNull<K extends keyof T>(column: K): this
 
-  orWhereNull(column: C): this
-  orOnNull(column: C): this
+  orWhereNull<K extends keyof T>(column: K): this
+  orOnNull<K extends keyof T>(column: K): this
 
-  whereNotNull(column: C): this
-  onNotNull(column: C): this
+  whereNotNull<K extends keyof T>(column: K): this
+  onNotNull<K extends keyof T>(column: K): this
 
-  orWhereNotNull(column: C): this
-  orNotNull(column: C): this
+  orWhereNotNull<K extends keyof T>(column: K): this
+  orNotNull<K extends keyof T>(column: K): this
 }
 
 export type JoinArgs<S, J extends keyof S> =
@@ -123,7 +124,6 @@ export type JoinArgs<S, J extends keyof S> =
   | [keyof S[J], Operator, keyof S, keyof S[keyof S]]
 
 export interface IJoinBuilder<S> {
-  join<J extends keyof S>(table: J, fn: WhereFn<S[J]>): this
   join<
     J extends keyof S,
     T extends S[J],
@@ -148,9 +148,7 @@ export interface IJoinBuilder<S> {
     J2 extends keyof S,
     C2 extends keyof S[J2],
   >(table: J, column: C, operator: Operator, table2: J2, column2: C2): this
-  join<J extends keyof S>(table: J, ...args: JoinArgs<S, J>): this
 
-  innerJoin<J extends keyof S>(table: J, fn: WhereFn<S[J]>): this
   innerJoin<
     J extends keyof S,
     T extends S[J],
@@ -175,9 +173,7 @@ export interface IJoinBuilder<S> {
     J2 extends keyof S,
     C2 extends keyof S[J2],
   >(table: J, column: C, operator: Operator, table2: J2, column2: C2): this
-  innerJoin<J extends keyof S>(table: J, ...args: JoinArgs<S, J>): this
 
-  leftJoin<J extends keyof S>(table: J, fn: WhereFn<S[J]>): this
   leftJoin<
     J extends keyof S,
     T extends S[J],
@@ -202,9 +198,7 @@ export interface IJoinBuilder<S> {
     J2 extends keyof S,
     C2 extends keyof S[J2],
   >(table: J, column: C, operator: Operator, table2: J2, column2: C2): this
-  leftJoin<J extends keyof S>(table: J, ...args: JoinArgs<S, J>): this
 
-  rightJoin<J extends keyof S>(table: J, fn: WhereFn<S[J]>): this
   rightJoin<
     J extends keyof S,
     T extends S[J],
@@ -229,9 +223,7 @@ export interface IJoinBuilder<S> {
     J2 extends keyof S,
     C2 extends keyof S[J2],
   >(table: J, column: C, operator: Operator, table2: J2, column2: C2): this
-  rightJoin<J extends keyof S>(table: J, ...args: JoinArgs<S, J>): this
 
-  crossJoin<J extends keyof S>(table: J, fn: WhereFn<S[J]>): this
   crossJoin<
     J extends keyof S,
     T extends S[J],
@@ -256,5 +248,4 @@ export interface IJoinBuilder<S> {
     J2 extends keyof S,
     C2 extends keyof S[J2],
   >(table: J, column: C, operator: Operator, table2: J2, column2: C2): this
-  crossJoin<J extends keyof S>(table: J, ...args: JoinArgs<S, J>): this
 }

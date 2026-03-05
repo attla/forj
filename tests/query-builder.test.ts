@@ -45,6 +45,30 @@ function newQB<
 }
 
 describe('Query Builder', () => {
+  it('INSERT', () => {
+    const q = newQB().insert({
+      id: 123,
+      name: 'Joe Doe',
+      email: 'joe@doe.com',
+    })
+    expect(q.query).toBe(`INSERT INTO users (id, name, email) VALUES (?, ?, ?)`)
+    expect(q.sql).toBe(`INSERT INTO users (id, name, email) VALUES (123, 'Joe Doe', 'joe@doe.com')`)
+  })
+
+  it('UPDATE', () => {
+    const q = newQB().update({
+      name: 'Joe Doe',
+      email: 'joe@doe.com',
+    }).where('id', 123)
+    expect(q.query).toBe(`UPDATE users SET name = ?, email = ? WHERE users.id = ?`)
+    expect(q.sql).toBe(`UPDATE users SET name = 'Joe Doe', email = 'joe@doe.com' WHERE users.id = 123`)
+  })
+
+  it('DELETE', () => {
+    const q = newQB().delete().where('id', 123)
+    expect(q.query).toBe(`DELETE FROM users WHERE users.id = ?`)
+    expect(q.sql).toBe(`DELETE FROM users WHERE users.id = 123`)
+  })
 
   it('SELECT', () => {
     let qb = newQB()

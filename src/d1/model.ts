@@ -10,16 +10,16 @@ import { Envir } from 't0n'
 import QueryBuilder from '../query-builder'
 import BModel from '../model'
 import type {
-  DBSchema, SchemaKeys,
+  DBSchema,
   Item,
   Pipe, Result, RunFn,
 } from '../types'
 
 export function Model<
   TSchema extends DBSchema,
-  TBase extends SchemaKeys<TSchema>
+  TBase extends keyof z.infer<TSchema>
 >(schema: TSchema, base: TBase) {
-  type S = z.infer<typeof schema>
+  type S = z.infer<TSchema>
   return class extends BaseModel<TBase, S> {
     static $table = String(base)
     static $schema = schema
@@ -55,8 +55,9 @@ export abstract class BaseModel<TB extends keyof DB, DB> extends BModel<TB, DB> 
     ): Promise<Result<T, C>> => {
       let stmt = db.prepare(qb.query)
 
-      if (qb.args?.length)
-        stmt = stmt.bind(...qb.args)
+      const args = qb.args
+      if (args?.length)
+        stmt = stmt.bind(...args)
 
       const resp = await stmt.run<Item<T, C>>()
 

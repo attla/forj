@@ -2,6 +2,13 @@ import pluralize from 'pluralize'
 import type { ZodTypeAny } from 'zod'
 import type { DBSchema } from './types'
 
+export const types = {
+  SELECT: 1,
+  INSERT: 2,
+  UPDATE: 3,
+  DELETE: 4,
+} as const
+
 const operators = ['=', '!=', '>', '<', '>=', '<=', 'LIKE', 'IN', 'NOT IN', 'IS', 'IS NOT', 'BETWEEN']
 
 export function isOperator(o: any) {
@@ -21,6 +28,8 @@ export function parseSelectColumn(
     return col
 
   const [table, column] = explicit ? col.split('.') : [baseTable, col]
+  if (column == '*') return col
+
   return `${table}.${column} AS ${pluralize(table, 1)}_${column}`
 }
 
@@ -48,33 +57,109 @@ export function formatValue(value: any): string {
 }
 
 const zodTypeMap: Record<string, string> = {
-  'ZodString': 'string',
-  'ZodNumber': 'number',
-  'ZodBoolean': 'boolean',
-  'ZodObject': 'object',
-  'ZodArray': 'array',
-  'ZodDate': 'object',
-  'ZodNull': 'object',
-  'ZodUndefined': 'undefined',
-  'ZodSymbol': 'symbol',
-  'ZodBigInt': 'bigint',
-  'ZodFunction': 'function',
+  ZodString: 'string',
+  ZodNumber: 'number',
+  ZodBoolean: 'boolean',
+  ZodObject: 'object',
+  ZodArray: 'array',
+  ZodDate: 'object',
+  ZodNull: 'object',
+  ZodUndefined: 'undefined',
+  ZodSymbol: 'symbol',
+  ZodBigInt: 'bigint',
+  ZodFunction: 'function',
 }
 
 export const isZod = (obj: any): obj is ZodTypeAny => obj && typeof obj == 'object' && '_def' in obj
 
-export const zHas = (key: string, schema?: any) => schema != null && typeof schema == 'object' && !Array.isArray(schema) && (key in schema || 'shape' in schema && key in (schema.shape as Record<string, ZodTypeAny>))
+const getDef = (schema: any) => schema?._def ?? {}
+
+const getTypeName = (def: any): string => {
+  if (!def) return ''
+  if (def.typeName) return def.typeName // zod v3
+  if (def.type) { // zod v4
+    if (typeof def.type == 'string') {
+      if (def.type.startsWith('Zod')) return def.type
+      return 'Zod'+ def.type[0].toUpperCase() + def.type.slice(1)
+      // return zodTypeMap[def.type] || def.type
+    }
+
+    if (def.type?.name) return def.type.name
+  }
+
+  return ''
+}
+
+const unwrap = (schema: any): any => {
+  let current = schema
+  let allowNull = false
+  let allowUndefined = false
+
+  while (current?._def) {
+    const def = current._def
+    const type = getTypeName(def)
+
+    if (type == 'ZodNullable')
+      allowNull = true
+
+    if (type == 'ZodOptional' || type == 'ZodDefault')
+      allowUndefined = true
+
+    if (['ZodOptional', 'ZodNullable', 'ZodDefault', 'ZodReadonly'].includes(type)) {
+      current = def.innerType
+      continue
+    }
+
+    if (type == 'ZodEffects' || type == 'ZodPipeline') {
+      current = def.schema || def.innerType || def.out
+      continue
+    }
+
+    break
+  }
+
+  return { schema: current, allowNull, allowUndefined }
+  // return current
+}
+
+export const zHas = (key: string, schema?: any): boolean => {
+  if (!schema || typeof schema != 'object' || Array.isArray(schema))
+    return false
+
+  const keys = key.split('.')
+
+  for (const k of keys) {
+    schema = unwrap(schema).schema
+
+    if (!schema || typeof schema != 'object')
+      return false
+
+    if (schema.shape && k in schema.shape) {
+      schema = schema.shape[k]
+    } else if (k in schema) {
+      schema = schema[k]
+    } else {
+      return false
+    }
+  }
+
+  return true
+}
 
 export const zGet = (key: string, schema?: any): [string, ZodTypeAny] | false => {
   const keys = key.split('.')
-  for (const i in keys) {
+
+  for (const k of keys) {
+    schema = unwrap(schema).schema
+
     if (typeof schema != 'object') return false
 
-    const k = keys[i]
-    if ('shape' in schema && k in schema.shape) {
+    if (schema?.shape && k in schema.shape) {
       schema = schema.shape[k]
       continue
-    } else if (k in schema) {
+    }
+
+    if (k in schema) {
       schema = schema[k]
       continue
     }
@@ -86,44 +171,49 @@ export const zGet = (key: string, schema?: any): [string, ZodTypeAny] | false =>
 }
 
 export const zType = (key: string, schema?: any): string => {
-  const _ = zGet(key, schema)
-  if (!_ || !('_def' in _[1]))
+  const result = zGet(key, schema)
+  if (!result)
     return 'unknown'
-  key = _[0]
-  schema = _[1]
 
-  return ((schema?._def?.innerType?._def || schema?._def)?.typeName || '').split('Zod').pop().toLowerCase()
+  const type = getTypeName(getDef(unwrap(result[1]).schema))
+  if (!type)
+    return 'unknown'
+
+  return type.replace('Zod', '').toLowerCase()
 }
 
 export const zSame = (key: string, val: any, schema?: any, deep: boolean = false): boolean => {
   if (!deep) {
-    const _ = zGet(key, schema)
-    if (!_) return _
-    key = _[0]
-    schema = _[1]
+    const result = zGet(key, schema)
+    if (!result) return false
+    schema = result[1]
   }
 
-  if (!('_def' in schema))
-    return false // typeof val == typeof schema[key] // TODO: improv it
+  const _schema = unwrap(schema)
 
-  let def = schema?._def || {}
-  if (schema?._def?.typeName == 'ZodOptional')
-    def = def?.innerType?._def || {}
+  if (val === undefined) return _schema.allowUndefined
+  if (val === null) return _schema.allowNull
 
-  const zType = def?.typeName || ''
+  if (!_schema.schema?._def) return false
 
-  if (!zType) return false
+  const def = _schema.schema._def
+  const type = getTypeName(def)
 
-  if (zType == 'ZodUnion' && def?.options?.length)
-    return def?.options?.some((z: any) => zSame(key, val, z, true))
+  if (!type) return false
 
-  else if (zType == 'ZodArray')
+  if (type == 'ZodUnion' && def.options)
+    return def.options.some((z: any) => zSame(key, val, z, true))
+
+  if (type == 'ZodArray')
     return Array.isArray(val)
 
-  else if (zType == 'ZodDate')
+  if (type == 'ZodObject')
+    return typeof val == 'object' && val != null && !Array.isArray(val)
+
+  if (type == 'ZodDate')
     return val instanceof Date
 
-  return typeof val == zodTypeMap[zType]
+  return typeof val == zodTypeMap[type]
 }
 
 export function isJoinCompare(val: any, schema?: DBSchema) {

@@ -39,7 +39,7 @@ export default class ClauseBuilder<
     this.#schema = schema
   }
 
-  #nested(fn: WhereFn<T, C>, operator: ClauseOperator = 'AND') {
+  #nested(fn: WhereFn<T>, operator: ClauseOperator = 'AND') {
     const nested = new ClauseBuilder<T, C>(this.#table, this.#schema)
     fn(nested)
 
@@ -80,7 +80,7 @@ export default class ClauseBuilder<
     column = parseColumn(String(column), this.#table)
 
     if (this.#schema && !zSame(column.replace(/"/g, ''), value, this.#schema))
-      throw new Error(`Table column '${String(column)}' of type '${zType(column, this.#schema)}' is not assignable as type of '${typeof value}'.`)
+      throw new Error(`Table column '${String(column.replace(/"/g, ''))}' of type '${zType(column.replace(/"/g, ''), this.#schema)}' is not assignable as type of '${typeof value}'.`)
 
     return isJoinCompare(value, this.#schema) // @ts-ignore
       ? this.#clause(`${column} ${operator} ${value}`, [], logical) // @ts-ignore
@@ -111,31 +111,31 @@ export default class ClauseBuilder<
     return this.#clause(parseColumn(column, this.#table) + ` ${operator} (${values.map(() => '?').join(', ')})`, values, logical)
   }
 
-  whereIn(column: C, values: T[C][]) { // @ts-ignore
+  whereIn<K extends keyof T>(column: K, values: T[K][]) { // @ts-ignore
     return this.#in(column, values, 'IN')
   }
-  in(column: C, values: T[C][]) {
+  in<K extends keyof T>(column: K, values: T[K][]) {
     return this.whereIn(column, values)
   }
 
-  whereNotIn(column: C, values: T[C][]) { // @ts-ignore
+  whereNotIn<K extends keyof T>(column: K, values: T[K][]) { // @ts-ignore
     return this.#in(column, values, 'NOT IN')
   }
-  notIn(column: C, values: T[C][]) {
+  notIn<K extends keyof T>(column: K, values: T[K][]) {
     return this.whereNotIn(column, values)
   }
 
-  orWhereIn(column: C, values: T[C][]) { // @ts-ignore
+  orWhereIn<K extends keyof T>(column: K, values: T[K][]) { // @ts-ignore
     return this.#in(column, values, 'IN', 'OR')
   }
-  orIn(column: C, values: T[C][]) {
+  orIn<K extends keyof T>(column: K, values: T[K][]) {
     return this.orWhereIn(column, values)
   }
 
-  orWhereNotIn(column: C, values: T[C][]) { // @ts-ignore
+  orWhereNotIn<K extends keyof T>(column: K, values: T[K][]) { // @ts-ignore
     return this.#in(column, values, 'NOT IN', 'OR')
   }
-  orNotIn(column: C, values: T[C][]) {
+  orNotIn<K extends keyof T>(column: K, values: T[K][]) {
     return this.orWhereNotIn(column, values)
   }
 
@@ -149,31 +149,31 @@ export default class ClauseBuilder<
     return this.#clause(parseColumn(column, this.#table) + ` ${operator} ? AND ?`, [one, two], logical)
   }
 
-  whereBetween(column: C, one: T[C], two: T[C]) { // @ts-ignore
+  whereBetween<K extends keyof T>(column: K, one: T[K], two: T[K]) { // @ts-ignore
     return this.#between(column, one, two, 'BETWEEN')
   }
-  between(column: C, one: T[C], two: T[C]) {
+  between<K extends keyof T>(column: K, one: T[K], two: T[K]) {
     return this.whereBetween(column, one, two)
   }
 
-  orWhereBetween(column: C, one: T[C], two: T[C]) { // @ts-ignore
+  orWhereBetween<K extends keyof T>(column: K, one: T[K], two: T[K]) { // @ts-ignore
     return this.#between(column, one, two, 'BETWEEN', 'OR')
   }
-  orBetween(column: C, one: T[C], two: T[C]) {
+  orBetween<K extends keyof T>(column: K, one: T[K], two: T[K]) {
     return this.orWhereBetween(column, one, two)
   }
 
-  whereNotBetween(column: C, one: T[C], two: T[C]) { // @ts-ignore
+  whereNotBetween<K extends keyof T>(column: K, one: T[K], two: T[K]) { // @ts-ignore
     return this.#between(column, one, two, 'NOT BETWEEN')
   }
-  notBetween(column: C, one: T[C], two: T[C]) {
+  notBetween<K extends keyof T>(column: K, one: T[K], two: T[K]) {
     return this.whereNotBetween(column, one, two)
   }
 
-  orWhereNotBetween(column: C, one: T[C], two: T[C]) { // @ts-ignore
+  orWhereNotBetween<K extends keyof T>(column: K, one: T[K], two: T[K]) { // @ts-ignore
     return this.#between(column, one, two, 'NOT BETWEEN', 'OR')
   }
-  orNotBetween(column: C, one: T[C], two: T[C]) {
+  orNotBetween<K extends keyof T>(column: K, one: T[K], two: T[K]) {
     return this.orWhereNotBetween(column, one, two)
   }
 
@@ -185,31 +185,31 @@ export default class ClauseBuilder<
     return this.#clause(parseColumn(column, this.#table) +` ${operator} NULL`, [], logical)
   }
 
-  whereNull(column: C) {
+  whereNull<K extends keyof T>(column: K) {
     return this.#null(column as string)
   }
-  onNull(column: C) {
+  onNull<K extends keyof T>(column: K) {
     return this.whereNull(column)
   }
 
-  orWhereNull(column: C) {
+  orWhereNull<K extends keyof T>(column: K) {
     return this.#null(column as string, 'IS', 'OR')
   }
-  orOnNull(column: C) {
+  orOnNull<K extends keyof T>(column: K) {
     return this.orWhereNull(column)
   }
 
-  whereNotNull(column: C) {
+  whereNotNull<K extends keyof T>(column: K) {
     return this.#null(column as string, 'IS NOT')
   }
-  onNotNull(column: C) {
+  onNotNull<K extends keyof T>(column: K) {
     return this.whereNotNull(column)
   }
 
-  orWhereNotNull(column: C) {
+  orWhereNotNull<K extends keyof T>(column: K) {
     return this.#null(column as string, 'IS NOT', 'OR')
   }
-  orNotNull(column: C) {
+  orNotNull<K extends keyof T>(column: K) {
     return this.orWhereNotNull(column)
   }
 }
