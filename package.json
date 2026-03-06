@@ -1,7 +1,7 @@
 {
   "name": "forj",
   "description": "SQLite ORM and Query Builder whitout dependencies",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "type": "module",
   "main": "src/index.ts",
   "files": ["src"],
@@ -12,16 +12,6 @@
     "./dynamodb": "./src/dynamodb/index.ts",
     "./dynamodb/types": "./src/dynamodb/types.ts",
     "./migrate": "./src/migrations/index.ts"
-  },
-  "-exports": {
-    ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
-    },
-    "./d1": {
-      "import": "./dist/d1.js",
-      "types": "./dist/d1.d.ts"
-    }
   },
   "scripts": {
     "bench": "tsx tests/benchmark/*.bench.ts",
@@ -45,6 +35,7 @@
     "tsx": "^4.19.4",
     "typescript": "^5.9.3"
   },
+  "packageManager": "bun@1.3.10",
   "engines": {
     "node": ">=18.0.0"
   },

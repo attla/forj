@@ -1,11 +1,11 @@
-import { z, ZodTypeAny } from 'zod'
+import type * as z from 'zod'
 import { Dynamodb } from './client'
 import { Schema } from './schema'
 import { _model } from './decorators'
 import type { ModelOpts } from './types'
 
 export function Repository<
-  S extends ZodTypeAny,
+  S extends z.ZodTypeAny,
   B extends new (...args: any[]) => any
 >(
   schema: S,

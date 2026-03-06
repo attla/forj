@@ -1,4 +1,4 @@
-import { z, ZodTypeAny } from 'zod'
+import * as z from 'zod'
 import type { SchemaStructure } from './types'
 
 const m = Symbol('a')
@@ -12,17 +12,17 @@ export function arraySchema(v: any): any {
   return v
 }
 
-function getArrayItem(schema: z.ZodArray<any>): ZodTypeAny {
+function getArrayItem(schema: z.ZodArray<any>): z.ZodTypeAny {
   const def: any = schema._def
-  return (def.element ?? def.type ?? def.innerType) as ZodTypeAny
+  return (def.element ?? def.type ?? def.innerType) as z.ZodTypeAny
 }
 
-export function extractZodKeys(schema: ZodTypeAny): SchemaStructure {
+export function extractZodKeys(schema: z.ZodTypeAny): SchemaStructure {
   if (schema instanceof z.ZodObject) {
     const shape = schema.shape
 
     return Object.entries(shape).map(([key, value]) => {
-      const inner = unwrap(value as ZodTypeAny)
+      const inner = unwrap(value as z.ZodTypeAny)
 
       if (inner instanceof z.ZodObject)
         return notEmpty(key, extractZodKeys(inner))
@@ -50,7 +50,7 @@ export function extractZodKeys(schema: ZodTypeAny): SchemaStructure {
   return []
 }
 
-export function unwrap(schema: ZodTypeAny): ZodTypeAny {
+export function unwrap(schema: z.ZodTypeAny): z.ZodTypeAny {
   while (true) {
     if (schema instanceof z.ZodOptional || schema instanceof z.ZodNullable) {
       schema = (schema._def as any).innerType
@@ -63,7 +63,7 @@ export function unwrap(schema: ZodTypeAny): ZodTypeAny {
     }
 
     if (schema instanceof z.ZodUnion) {
-      const options = (schema._def as any).options as ZodTypeAny[]
+      const options = (schema._def as any).options as z.ZodTypeAny[]
       const nonEmpty = options.find(
         opt => !(opt instanceof z.ZodUndefined) && !(opt instanceof z.ZodNull)
       )
@@ -95,7 +95,7 @@ function notEmpty(key: string, schema: SchemaStructure): string | Record<string,
 }
 
 export function Schema<
-  T extends ZodTypeAny,
+  T extends z.ZodTypeAny,
   B extends object
 >(
   schema: T,

@@ -1,5 +1,6 @@
-import z from 'zod'
-import QueryBuilder from './query-builder'
+import type * as z from 'zod'
+import type zm from 'zod/mini'
+import type QueryBuilder from './query-builder'
 import { types } from './utils'
 
 export type text = string
@@ -28,14 +29,15 @@ export type OrderDirection = 'ASC' | 'DESC' | 'asc' | 'desc'
 
 export type JoinType = 'INNER' | 'LEFT' | 'RIGHT' | 'CROSS'
 
-export type DBSchema = z.ZodObject<z.ZodRawShape>
 
-export type SchemaObject = z.ZodRawShape
+export type DBSchema = z.ZodTypeAny | zm.ZodMiniObject
+
+export type SchemaObject = Record<string, z.ZodTypeAny>
 
 export type SchemaKeys<TSchema extends DBSchema | SchemaObject> =
-  TSchema extends z.ZodObject<infer TShape extends z.ZodRawShape>
+  TSchema extends { shape: infer TShape }
     ? keyof TShape
-    : TSchema extends z.ZodRawShape
+    : TSchema extends SchemaObject
       ? keyof TSchema
       : never
 

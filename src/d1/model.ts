@@ -4,7 +4,7 @@ import type {
   // D1Result, D1ExecResult, D1Meta,
 } from './types'
 
-import z from 'zod'
+import type * as z from 'zod'
 import { Envir } from 't0n'
 
 import QueryBuilder from '../query-builder'

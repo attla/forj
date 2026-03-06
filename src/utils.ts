@@ -1,5 +1,5 @@
 import pluralize from 'pluralize'
-import type { ZodTypeAny } from 'zod'
+import type * as z from 'zod'
 import type { DBSchema } from './types'
 
 export const types = {
@@ -70,9 +70,9 @@ const zodTypeMap: Record<string, string> = {
   ZodFunction: 'function',
 }
 
-export const isZod = (obj: any): obj is ZodTypeAny => obj && typeof obj == 'object' && '_def' in obj
+export const isZod = (obj: any): obj is z.ZodTypeAny => obj && typeof obj == 'object' && '_def' in obj
 
-const getDef = (schema: any) => schema?._def ?? {}
+const getDef = (schema: any) => schema?._def ?? schema?.def ?? {}
 
 const getTypeName = (def: any): string => {
   if (!def) return ''
@@ -95,8 +95,8 @@ const unwrap = (schema: any): any => {
   let allowNull = false
   let allowUndefined = false
 
-  while (current?._def) {
-    const def = current._def
+  while (current?._def || current?.def) {
+    const def = current._def || current?.def
     const type = getTypeName(def)
 
     if (type == 'ZodNullable')
@@ -146,7 +146,7 @@ export const zHas = (key: string, schema?: any): boolean => {
   return true
 }
 
-export const zGet = (key: string, schema?: any): [string, ZodTypeAny] | false => {
+export const zGet = (key: string, schema?: any): [string, z.ZodTypeAny] | false => {
   const keys = key.split('.')
 
   for (const k of keys) {
@@ -194,9 +194,9 @@ export const zSame = (key: string, val: any, schema?: any, deep: boolean = false
   if (val === undefined) return _schema.allowUndefined
   if (val === null) return _schema.allowNull
 
-  if (!_schema.schema?._def) return false
+  const def = getDef(_schema.schema)
+  if (!def) return false
 
-  const def = _schema.schema._def
   const type = getTypeName(def)
 
   if (!type) return false
