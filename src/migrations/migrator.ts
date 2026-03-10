@@ -1,11 +1,12 @@
 import glob from 'tiny-glob'
 import { mkdirSync, existsSync, writeFileSync } from 'node:fs'
-import { dirname, join, resolve } from 'node:path'
-import { Datte, IMPORT } from 't0n'
+import { dirname, join } from 'pathe'
+import { Datte, Envir, IMPORT } from 't0n'
 import { Schema } from './schema'
 import { MigrationInfo, MigrationClass, Queue } from './types'
 
-const __root = resolve(dirname(new URL(import.meta.url).pathname), '../../../..')
+export const _forj = join(dirname(new URL(import.meta.url).pathname), '..')
+export const _root = Envir.get('npm_config_local_prefix') || Envir.get('PWD') || join(_forj, '../../../')
 
 export class Migrator {
   static #input: string
@@ -24,17 +25,17 @@ export class Migrator {
   }
 
   static dir(dir?: string) {
-    this.#input = join(__root, 'migrations', dir || '')
+    this.#input = join(_root, 'migrations', dir || '')
     this.#output = join(this.#input, 'sql')
     return this
   }
 
   static inputDir(dir: string) {
-    this.#input = join(__root, dir)
+    this.#input = join(_root, dir)
     return this
   }
   static outputDir(dir: string) {
-    this.#output = join(__root, dir)
+    this.#output = join(_root, dir)
     return this
   }
 
@@ -88,7 +89,7 @@ export class Migrator {
     if (!match) return null
     const [, year, month, day, hour, minute, second, slugName] = match
 
-    const input = join(__root, fileName)
+    const input = join(_root, fileName)
     const output = join(this.#output, name +'.sql')
     const mod = await IMPORT(input)
     const handler = mod.default as MigrationClass

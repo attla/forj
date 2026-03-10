@@ -3,7 +3,11 @@ import { sqlName, tableSlug } from '../utils'
 import type { ColumnDefinition, IndexDefinition, ForeignKeyDefinition } from './types'
 
 export default class SchemaBuilder {
-  static create(blueprint: Blueprint, exist: boolean = false): string {
+  static create(
+    blueprint: Blueprint,
+    exist: boolean = false,
+    rowId: boolean = true
+  ): string {
     const table = sqlName(blueprint.table)
     const columns = blueprint.columns
     const indexes = blueprint.indexes
@@ -19,7 +23,9 @@ export default class SchemaBuilder {
       ...foreignKeyDefinitions
     ].filter(Boolean)
 
-    return `CREATE TABLE ${exist ? 'IF NOT EXISTS ' : ''}${table} (\n  ${allDefinitions.join(',\n  ')}\n);`
+    return `CREATE TABLE ${exist ? 'IF NOT EXISTS ' : ''}${table} (\n  ${allDefinitions.join(',\n  ')}\n)${
+      rowId ? '' : ' WITHOUT ROWID'
+    };`
   }
 
   static alter(blueprint: Blueprint): string[] {

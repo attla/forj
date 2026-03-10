@@ -1,5 +1,4 @@
 import { Schema, Blueprint } from '@/migrations'
-import { tableName, tableSlug } from '@/utils'
 
 describe('Migrations', () => {
   const result = {

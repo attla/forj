@@ -47,8 +47,8 @@ export class Schema {
     return blueprint
   }
 
-  static create(table: string, fn: BlueprintFn, exist: boolean = false) {
-    this.#addStatement(Builder.create(this.#blueprint(table, fn), exist))
+  static create(table: string, fn: BlueprintFn, exist: boolean = false, rowId: boolean = true) {
+    this.#addStatement(Builder.create(this.#blueprint(table, fn), exist, rowId))
   }
 
   static createIfNotExists(table: string, fn: BlueprintFn) {
@@ -66,7 +66,15 @@ export class Schema {
     this.#addStatement(Builder.create(this.#blueprint(table, fn as BlueprintFn, (table: Blueprint) => {
       columns.forEach(column => table.foreignId(column))
       table.primary(table.columns.map(c => c.name))
-    })).slice(0, -1) + ' WITHOUT ROWID;')
+    }), false, false))
+  }
+
+  static createWithoutRowId(table: string, fn: BlueprintFn, exist: boolean = false) {
+    this.create(table, fn, false, false)
+  }
+
+  static createIfNotExistsWithoutRowId(table: string, fn: BlueprintFn) {
+    this.create(table, fn, true, false)
   }
 
   static table(table: string, fn: BlueprintFn) {
