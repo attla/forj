@@ -38,7 +38,8 @@ export default abstract class Model<TB extends keyof DB, DB> {
     M extends typeof Model<TB, DB>,
     I extends InstanceType<M>,
     T extends I['$TShape'],
-  >(this: M, data: Record<keyof T, Value>) {
+    C extends keyof T
+  >(this: M, data: Record<C, Value>) {
     return this.builder<I['$DBShape'], T>().insert(data)
   }
 
@@ -46,7 +47,8 @@ export default abstract class Model<TB extends keyof DB, DB> {
     M extends typeof Model<TB, DB>,
     I extends InstanceType<M>,
     T extends I['$TShape'],
-  >(this: M, data: Record<keyof T, Value>) {
+    C extends keyof T
+  >(this: M, data: Record<C, Value>) {
     return this.builder<I['$DBShape'], T>().update(data)
   }
 

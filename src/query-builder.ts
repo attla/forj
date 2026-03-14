@@ -77,7 +77,7 @@ export default class QueryBuilder<
     return await this.#pipe?.run(this)
   }
 
-  #setType(type: QueryType, data?: Partial<Record<C, Value>>) {
+  #setType<K extends keyof T>(type: QueryType, data?: Partial<Record<K, Value>>) {
     this.#type = type
     if (data) {
       this.#keys = Object.keys(data)
@@ -87,14 +87,14 @@ export default class QueryBuilder<
     return this
   }
 
-  insert(data: Partial<Record<C, Value>>) {
+  insert<K extends keyof T>(data: Partial<Record<K, Value>>) {
     if (this.#opts.timestamps || this.#opts.createdAt) // @ts-ignore
       data.created_at = Timestamp.now()
 
     return this.#setType(types.INSERT, data)
   }
 
-  update(data: Partial<Record<C, Value>>) {
+  update<K extends keyof T>(data: Partial<Record<K, Value>>) {
     if (this.#opts.timestamps || this.#opts.updatedAt) // @ts-ignore
       data.updated_at = Timestamp.now()
 
