@@ -65,13 +65,13 @@ export default class ClauseBuilder<
     logical: ClauseOperator,
     ...args: WhereArgs<T>
   ) {
-    if (typeof args[0] == 'function')
+    if (typeof args[0] === 'function')
       return this.#nested(args[0], logical)
 
     const length = args.length
     let [column, operator, value] = args
 
-    if (length == 2) { // @ts-ignore
+    if (length === 2) { // @ts-ignore
       value = operator
       operator = '='
     }

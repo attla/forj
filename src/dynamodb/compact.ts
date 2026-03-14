@@ -70,7 +70,7 @@ export default class Compact {
   }
 
   static decode<T = any>(val: string, schema: SchemaStructure): T {
-    if (!val || typeof val != 'string') return val as T
+    if (!val || typeof val !== 'string') return val as T
 
     return this.withSchema(this.unzip(JSON.parse(
       this.#unpack(val)
@@ -89,7 +89,7 @@ export default class Compact {
     if (this.#cantZip(obj)) return obj
 
     return schema.map(key => {
-      if (typeof key == 'string')
+      if (typeof key === 'string')
         return this.memo(obj[key], seen)
 
       const mainKey = Object.keys(key)[0]
@@ -112,14 +112,14 @@ export default class Compact {
 
     if (this.#cantZip(val, type, length)) return val
 
-    if (type == 'object') {
+    if (type === 'object') {
       for (const key in val)
         val[key] = this.unzip(val[key], seen)
 
       return val
     }
 
-    if (type == 'string' && val.startsWith('^')) {
+    if (type === 'string' && val.startsWith('^')) {
       const item = seen[parseInt(val.slice(1), 10)]
       return item ? item : val
     }
@@ -143,7 +143,7 @@ export default class Compact {
   static entry(key: any, value: any): any {
     if (!key) return undefined
 
-    if (typeof key == 'string')
+    if (typeof key === 'string')
       return [key, value == null ? null : value]
 
     const mainKey = Object.keys(key)[0]
@@ -166,7 +166,7 @@ export default class Compact {
       return val.map(item => this.memo(item, seen))
 
     const type = typeof val
-    if (type == 'object' && val != null) {
+    if (type === 'object' && val !== null) {
       for (const key in val)
         val[key] = this.memo(val[key], seen)
 
@@ -177,7 +177,7 @@ export default class Compact {
     if (this.#cantZip(val, type, length)) return val
 
     const index = seen.indexOf(val)
-    if (index != -1)
+    if (index !== -1)
       return `^${index}`
 
     seen.push(val)
@@ -200,6 +200,6 @@ export default class Compact {
   static #cantZip(val: any, type: string = '', length: number = 0) {
     if (!val || [null, true, false, 'true', 'false'].includes(val)) return true
 
-    return !type && !length ? false : type != 'object' && length < 2
+    return !type && !length ? false : type !== 'object' && length < 2
   }
 }

@@ -136,7 +136,7 @@ export default class QueryBuilder<
     this.#hasJoin = true
     const query = (type ? type + ' ' : '') + `JOIN ${sqlName(table as string)} ON `
 
-    if (typeof args[0] == 'function') {
+    if (typeof args[0] === 'function') {
       const join = new ClauseBuilder<S[J]>(table as string, this.#schema)
       args[0](join)
 
@@ -148,17 +148,17 @@ export default class QueryBuilder<
     const length = args.length
     let [column, operator, value, value2] = args
 
-    if (length == 2) { // @ts-ignore
+    if (length === 2) { // @ts-ignore
       value = operator
       operator = '='
-    } else if (length == 3 && !isOperator(operator)) { // @ts-ignore
+    } else if (length === 3 && !isOperator(operator)) { // @ts-ignore
       value = parseColumn(value as string, operator as string) // TODO: check if value is a valid column
 
       if (this.#schema && !isJoinCompare(value, this.#schema))
         throw new Error(`Table column '${value}' doesn't exists.`)
 
       operator = '='
-    } else if (length == 4) { // @ts-ignore
+    } else if (length === 4) { // @ts-ignore
       value = parseColumn(value2 as string, value as string)
       operator = '='
     }
@@ -549,16 +549,16 @@ export default class QueryBuilder<
     if (this.#clauses.length)
       sql += ' WHERE '+ this.#clauses.clauses.join(' ')
 
-    if (this.#type == types.SELECT && this.#groups.length)
+    if (this.#type === types.SELECT && this.#groups.length)
       sql += ' GROUP BY '+ this.#groups.join(', ')
 
     if (this.#orders.length)
       sql += ' ORDER BY '+ this.#orders.join(', ')
 
-    if (this.#limit != undefined)
+    if (this.#limit !== undefined)
       sql += ' LIMIT '+ this.#limit
 
-    if (this.#offset != undefined)
+    if (this.#offset !== undefined)
       sql += ' OFFSET '+ this.#offset
 
     return sql

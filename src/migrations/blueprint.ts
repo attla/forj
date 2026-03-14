@@ -95,7 +95,7 @@ export class Blueprint {
   enum(name: string, values: string[] | number[]) {
     return this.#column({
       name,
-      type: values.every(v => typeof v == 'string') ? 'TEXT' : (values.every(v => Number.isInteger(v)) ? 'INTEGER' : 'REAL'),
+      type: values.every(v => typeof v === 'string') ? 'TEXT' : (values.every(v => Number.isInteger(v)) ? 'INTEGER' : 'REAL'),
       // TODO:
       // Checking floating-point numbers can be problematic due to the precision of REAL numbers
       // SQLite might store 0.5 as 0.4999999 or 0.5000001, causing the check to fail
@@ -103,7 +103,7 @@ export class Blueprint {
       //   rate NUMERIC(3,1) NOT NULL DEFAULT 0 CHECK(
       //     rate IN (0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5)
       //   )
-      raw: `CHECK(${name} IN (${values.map(v => typeof v == 'string' ? `'${v.replace(/'/g, "\\'")}'` : v).join(', ')}))`,
+      raw: `CHECK(${name} IN (${values.map(v => typeof v === 'string' ? `'${v.replace(/'/g, "\\'")}'` : v).join(', ')}))`,
     })
   }
 
@@ -112,7 +112,7 @@ export class Blueprint {
   }
 
   timestamps(columnType: 'int' | 'date' = 'int') {
-    const isInt = columnType == 'int'
+    const isInt = columnType === 'int'
     const type = isInt ? 'INTEGER' : 'DATETIME'
     this.#column({ name: 'created_at', type, nullable: true, raw: 'DEFAULT '+ (isInt ? '(unixepoch())' : 'CURRENT_TIMESTAMP') })
     this.#column({ name: 'updated_at', type, nullable: true })
@@ -120,7 +120,7 @@ export class Blueprint {
   }
 
   softDelete(columnType: 'int' | 'date' = 'int', name: string = 'deleted_at') {
-    this.#column({ name, type: columnType == 'int' ? 'INTEGER' : 'DATETIME', nullable: true })
+    this.#column({ name, type: columnType === 'int' ? 'INTEGER' : 'DATETIME', nullable: true })
     return this
   }
   softDeletes(columnType: 'int' | 'date' = 'int', name: string = 'deleted_at') {

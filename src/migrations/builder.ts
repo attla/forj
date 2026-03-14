@@ -78,9 +78,9 @@ export default class SchemaBuilder {
         sql += 'NULL'
       } else {
         const type = typeof column.default
-        if (type == 'string') {
+        if (type === 'string') {
           sql += `'${column.default.replace(/'/g, "\\'")}'`
-        } else if (type == 'boolean') {
+        } else if (type === 'boolean') {
           sql += Number(column.default)
         } else {
           sql += `${column.default}`.replace(/''/g, "'\\'")

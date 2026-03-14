@@ -38,7 +38,7 @@ export abstract class BaseModel<TB extends keyof DB, DB> extends BModel<TB, DB> 
   }
 
   static DB() {
-    if (typeof this.$db == 'string') { // TODO: improv compatibility without nodejs_compat
+    if (typeof this.$db === 'string') { // TODO: improv compatibility without nodejs_compat
       if (!Envir.has(this.$db))
         throw new Error(`Database '${this.$db}' instance not provided.`)
 

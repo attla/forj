@@ -96,7 +96,7 @@ export class RawClient {
     if (Array.isArray(key)) {
       pk = key[0]
       skValue = key[1] ?? sk
-    } else if (typeof key == 'object' && key != null) {
+    } else if (typeof key === 'object' && key !== null) {
       return key
     } else {
       pk = key

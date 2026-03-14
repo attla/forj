@@ -5,7 +5,7 @@ import { relative } from 'node:path'
 const files = await glob('src/**/index.ts')
 const entries = Object.fromEntries(files.map(file => {
   const path = relative('src', file).replace('/index.ts', '')
-  return [path == '' ? 'index' : path, file]
+  return [path === '' ? 'index' : path, file]
 }))
 
 export default defineConfig({
